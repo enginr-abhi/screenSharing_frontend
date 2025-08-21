@@ -2,24 +2,30 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Screen Share — Stable Permission Build</title>
+<title>Screen Share — Pro UI</title>
 <link rel="stylesheet" href="main.css">
 </head>
 <body>
+
 <header>Screen Share</header>
 
 <div class="panel">
   <div class="row">
-    <label>Room:</label>
-      <input id="room" value="room1" />
+    <label for="name">Name:</label>
+    <input id="name" placeholder="Enter your name" />
+  </div>
+  
+  <div class="row">
+    <label for="room">Room:</label>
+    <input id="room" value="room1" />
     <button id="joinBtn">Join</button>
-    <button id="shareBtn" disabled>Share Screen</button>
+    <button id="shareBtn" disabled>Request Access</button>
     <button id="stopBtn" disabled>Stop</button>
     <span id="status"></span>
   </div>
 
-  <div id="perm">
-    <div id="permText">Peer wants to view your screen.</div>
+  <div id="perm" class="perm-box">
+    <div id="permText">Peer wants to view your screen</div>
     <div class="actions">
       <button class="btn-ok" id="acceptBtn">Accept</button>
       <button class="btn-no" id="rejectBtn">Reject</button>
@@ -32,8 +38,7 @@
   </div>
 </div>
 
-<script src="https://screensharing-test-backend.onrender.com/socket.io/socket.io.js"></script>
- <!-- <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script> -->
-<script src="script.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="main.js"></script>
 </body>
 </html>
