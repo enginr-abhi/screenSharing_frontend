@@ -21,6 +21,7 @@
     <button id="joinBtn">Join</button>
     <button id="shareBtn" disabled>Request Access</button>
     <button id="stopBtn" disabled>Stop</button>
+    <button id="leaveBtn" disabled>Leave Room</button>
     <span id="status"></span>
   </div>
 
@@ -34,7 +35,10 @@
 
   <div class="videos">
     <video id="local" autoplay muted playsinline></video>
-    <video id="remote" autoplay playsinline></video>
+    <div class="remote-container">
+      <video id="remote" autoplay playsinline></video>
+      <button id="fsBtn" class="fs-btn">⤢</button>
+    </div>
   </div>
 </div>
 
