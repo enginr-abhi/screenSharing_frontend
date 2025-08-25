@@ -4,13 +4,13 @@ const roomEl   = document.getElementById('room');
 const joinBtn  = document.getElementById('joinBtn');
 const shareBtn = document.getElementById('shareBtn');
 const stopBtn  = document.getElementById('stopBtn');
-const leaveBtn = document.getElementById('leaveBtn');
 const statusEl = document.getElementById('status');
 const permBox  = document.getElementById('perm');
 const acceptBt = document.getElementById('acceptBtn');
 const rejectBt = document.getElementById('rejectBtn');
 const localV   = document.getElementById('local');
 const remoteV  = document.getElementById('remote');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
 
 let roomId = null;
 let pc = null;
@@ -30,8 +30,6 @@ function ensurePC() {
 
   pc.ontrack = (e) => {
     remoteV.srcObject = e.streams[0];
-    remoteV.style.width = '100%';
-    remoteV.style.height = '100%';
   };
 
   pc.onconnectionstatechange = () => {
@@ -44,24 +42,19 @@ function ensurePC() {
   return pc;
 }
 
-// --- Reset UI & stop streams
-function resetSharingUI(msg = "") {
+// --- Reset UI & stop sharing
+function resetSharingUI(msg = "Stopped") {
   if (screenStream) {
     screenStream.getTracks().forEach(t => t.stop());
     screenStream = null;
   }
   localV.srcObject = null;
+  remoteV.srcObject = null;
 
-  if (remoteV.srcObject) {
-    remoteV.srcObject.getTracks().forEach(t => t.stop());
-    remoteV.srcObject = null;
-  }
-
-  shareBtn.disabled = false;
-  stopBtn.disabled = true;
-  leaveBtn.disabled = roomId ? false : true;
-  joinBtn.disabled = roomId ? true : false;
-  if (msg) setStatus(msg);
+  shareBtn.disabled = false;    
+  stopBtn.disabled = false;     
+  joinBtn.disabled = false;     
+  setStatus(msg);
 }
 
 // --- Join Room
@@ -71,8 +64,7 @@ joinBtn.onclick = () => {
   socket.emit('join-room', roomId);
   joinBtn.disabled = true;
   shareBtn.disabled = false;
-  stopBtn.disabled = true;
-  leaveBtn.disabled = false;
+  stopBtn.disabled = false; 
   setStatus('Joined ' + roomId);
 };
 
@@ -111,13 +103,13 @@ acceptBt.onclick = async () => {
     await pc.setLocalDescription(offer);
     socket.emit('signal', { roomId, desc: pc.localDescription });
 
-    shareBtn.disabled = true;
+    shareBtn.disabled = true;  
     stopBtn.disabled = false;
     setStatus('Sharing your screen…');
   } catch (err) {
     console.error(err);
     alert('Screen capture failed: ' + err.message);
-    resetSharingUI();
+    resetSharingUI('');
   }
 
   pendingRequesterId = null;
@@ -129,18 +121,17 @@ rejectBt.onclick = () => {
   socket.emit('permission-response', { to: pendingRequesterId, accepted: false });
   permBox.style.display = 'none';
   pendingRequesterId = null;
-  shareBtn.disabled = false;
+  shareBtn.disabled = false; 
 };
 
 // --- Handle permission result for viewer
 socket.on('permission-result', (accepted) => {
   if (accepted) {
     setStatus('Peer accepted. Connecting…');
-    shareBtn.disabled = true;
-    stopBtn.disabled = false;
+    shareBtn.disabled = true; 
   } else {
     setStatus('Peer rejected your request.');
-    shareBtn.disabled = false;
+    shareBtn.disabled = false; 
   }
 });
 
@@ -165,66 +156,28 @@ socket.on('signal', async ({ desc, candidate }) => {
   }
 });
 
-// --- Stop sharing (both sharer & viewer)
+// --- Stop sharing
 function stopSharing() {
-  // Stop local screen if sharing
-  if (screenStream) {
-    screenStream.getTracks().forEach(t => t.stop());
-    screenStream = null;
-    localV.srcObject = null;
-  }
-
-  // Stop remote video if viewing
-  if (remoteV.srcObject) {
-    remoteV.srcObject.getTracks().forEach(t => t.stop());
-    remoteV.srcObject = null;
-  }
-
-  // Notify backend
+  resetSharingUI('Stopped by you');
   if (roomId) socket.emit('stop-share', roomId);
-
-  shareBtn.disabled = false;
-  stopBtn.disabled = true;
-  setStatus('Stopped');
 }
 stopBtn.onclick = stopSharing;
 
-// --- Leave room
-leaveBtn.onclick = () => {
-  if (!roomId) return;
-
-  stopSharing();
-  socket.emit('leave-room', roomId);
-
-  resetSharingUI('You left the room');
-
-  roomId = null;
-  joinBtn.disabled = false;
-  shareBtn.disabled = true;
-  stopBtn.disabled = true;
-  leaveBtn.disabled = true;
-};
-
 // --- Remote stop / peer leave
-socket.on('remote-stopped', () => stopSharing());
-socket.on('peer-left', () => resetSharingUI('Peer left the room'));
-
-// --- Fullscreen double click on remote video
-remoteV.addEventListener('dblclick', async () => {
-  if (remoteV.srcObject) {
-    try {
-      if (!document.fullscreenElement) {
-        await remoteV.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch (err) {
-      console.error('Fullscreen error:', err);
-    }
-  }
-});
+socket.on('remote-stopped', () => resetSharingUI('Peer stopped sharing'));
+socket.on('peer-left', () => resetSharingUI('Peer left'));
 
 // --- Cleanup on unload
 window.addEventListener('beforeunload', () => {
   if (roomId) socket.emit('stop-share', roomId);
 });
+
+// --- Fullscreen button
+fullscreenBtn.onclick = () => {
+  if (!document.fullscreenElement) {
+    remoteV.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+};
+
