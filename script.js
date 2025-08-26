@@ -1,5 +1,4 @@
 const socket   = io("https://screensharing-test-backend.onrender.com", { transports:["websocket"] });
-
 const roomEl   = document.getElementById('room');
 const joinBtn  = document.getElementById('joinBtn');
 const shareBtn = document.getElementById('shareBtn');
@@ -19,6 +18,14 @@ let pendingRequesterId = null;
 
 const setStatus = (s) => statusEl.textContent = s || '';
 
+// --- Hide / Show input fields only
+function hideInputs() {
+  document.querySelectorAll('.hide-on-share').forEach(el => el.style.display = 'none');
+}
+function showInputs() {
+  document.querySelectorAll('.hide-on-share').forEach(el => el.style.display = 'flex');
+}
+
 // --- PeerConnection setup
 function ensurePC() {
   if (pc) return pc;
@@ -30,6 +37,7 @@ function ensurePC() {
 
   pc.ontrack = (e) => {
     remoteV.srcObject = e.streams[0];
+    hideInputs();   // hide only inputs on viewer side
   };
 
   pc.onconnectionstatechange = () => {
@@ -48,12 +56,17 @@ function resetSharingUI(msg = "Stopped") {
     screenStream.getTracks().forEach(t => t.stop());
     screenStream = null;
   }
+  if (pc) {
+    pc.close();
+    pc = null;
+  }
   localV.srcObject = null;
   remoteV.srcObject = null;
 
-  shareBtn.disabled = false;    
-  stopBtn.disabled = false;     
-  joinBtn.disabled = false;     
+  shareBtn.disabled = false;   
+  stopBtn.disabled = false;    
+  joinBtn.disabled = true;     
+  showInputs();                
   setStatus(msg);
 }
 
@@ -103,8 +116,7 @@ acceptBt.onclick = async () => {
     await pc.setLocalDescription(offer);
     socket.emit('signal', { roomId, desc: pc.localDescription });
 
-    shareBtn.disabled = true;  
-    stopBtn.disabled = false;
+    hideInputs();  
     setStatus('Sharing your screen…');
   } catch (err) {
     console.error(err);
@@ -158,7 +170,7 @@ socket.on('signal', async ({ desc, candidate }) => {
 
 // --- Stop sharing
 function stopSharing() {
-  resetSharingUI('Stopped by you');
+  resetSharingUI('Stopped');
   if (roomId) socket.emit('stop-share', roomId);
 }
 stopBtn.onclick = stopSharing;
@@ -180,4 +192,3 @@ fullscreenBtn.onclick = () => {
     document.exitFullscreen();
   }
 };
-

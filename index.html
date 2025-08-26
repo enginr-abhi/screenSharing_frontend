@@ -10,20 +10,27 @@
 <header>Screen Share</header>
 
 <div class="panel">
-  <div class="row">
+  <!-- Name input (hide on share) -->
+  <div class="row hide-on-share">
     <label for="name">Name:</label>
     <input id="name" placeholder="Enter your name" />
   </div>
   
-  <div class="row">
+  <!-- Room input (hide on share) -->
+  <div class="row hide-on-share">
     <label for="room">Room:</label>
     <input id="room" value="room1" />
+  </div>
+
+  <!-- Buttons row (hamesha visible) -->
+  <div class="row">
     <button id="joinBtn">Join</button>
     <button id="shareBtn" disabled>Request Access</button>
     <button id="stopBtn" disabled>Stop</button>
     <span id="status"></span>
   </div>
 
+  <!-- Permission popup -->
   <div id="perm" class="perm-box">
     <div id="permText">Peer wants to view your screen</div>
     <div class="actions">
@@ -32,11 +39,11 @@
     </div>
   </div>
 
+  <!-- Video section -->
   <div class="videos">
     <video id="local" autoplay muted playsinline></video>
     <div class="remote-wrapper">
       <video id="remote" autoplay playsinline></video>
-      <!-- Fullscreen icon in right-bottom corner -->
       <button id="fullscreenBtn">⛶</button>
     </div>
   </div>
