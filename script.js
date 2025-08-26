@@ -18,12 +18,13 @@ let pendingRequesterId = null;
 
 const setStatus = (s) => statusEl.textContent = s || '';
 
-// --- Hide / Show input fields only
+// 🔹 Function to hide inputs and labels
 function hideInputs() {
-  document.querySelectorAll('.hide-on-share').forEach(el => el.style.display = 'none');
-}
-function showInputs() {
-  document.querySelectorAll('.hide-on-share').forEach(el => el.style.display = 'flex');
+  document.getElementById('name').style.display = 'none';
+  document.getElementById('room').style.display = 'none';
+  document.querySelector('label[for="name"]').style.display = 'none';
+  document.querySelector('label[for="room"]').style.display = 'none';
+  joinBtn.style.display = 'none';
 }
 
 // --- PeerConnection setup
@@ -37,7 +38,6 @@ function ensurePC() {
 
   pc.ontrack = (e) => {
     remoteV.srcObject = e.streams[0];
-    hideInputs();   // hide only inputs on viewer side
   };
 
   pc.onconnectionstatechange = () => {
@@ -56,17 +56,12 @@ function resetSharingUI(msg = "Stopped") {
     screenStream.getTracks().forEach(t => t.stop());
     screenStream = null;
   }
-  if (pc) {
-    pc.close();
-    pc = null;
-  }
   localV.srcObject = null;
   remoteV.srcObject = null;
 
-  shareBtn.disabled = false;   
-  stopBtn.disabled = false;    
-  joinBtn.disabled = true;     
-  showInputs();                
+  shareBtn.disabled = false;    
+  stopBtn.disabled = false;     
+  joinBtn.disabled = false;     
   setStatus(msg);
 }
 
@@ -104,6 +99,8 @@ acceptBt.onclick = async () => {
   if (!pendingRequesterId) return;
   socket.emit('permission-response', { to: pendingRequesterId, accepted: true });
   permBox.style.display = 'none';
+  
+  hideInputs(); // 🔹 Inputs hide
 
   try {
     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
@@ -116,7 +113,8 @@ acceptBt.onclick = async () => {
     await pc.setLocalDescription(offer);
     socket.emit('signal', { roomId, desc: pc.localDescription });
 
-    hideInputs();  
+    shareBtn.disabled = true;  
+    stopBtn.disabled = false;
     setStatus('Sharing your screen…');
   } catch (err) {
     console.error(err);
@@ -141,6 +139,7 @@ socket.on('permission-result', (accepted) => {
   if (accepted) {
     setStatus('Peer accepted. Connecting…');
     shareBtn.disabled = true; 
+    hideInputs(); // 🔹 Inputs hide on viewer side
   } else {
     setStatus('Peer rejected your request.');
     shareBtn.disabled = false; 
@@ -170,7 +169,7 @@ socket.on('signal', async ({ desc, candidate }) => {
 
 // --- Stop sharing
 function stopSharing() {
-  resetSharingUI('Stopped');
+  resetSharingUI('Stopped by you');
   if (roomId) socket.emit('stop-share', roomId);
 }
 stopBtn.onclick = stopSharing;
