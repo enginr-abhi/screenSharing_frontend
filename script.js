@@ -1,24 +1,25 @@
-const socket   = io("https://screensharing-test-backend.onrender.com", { transports:["websocket"] });
-const roomEl   = document.getElementById('room');
-const joinBtn  = document.getElementById('joinBtn');
+const socket = io("https://screensharing-test-backend.onrender.com", { transports: ["websocket"] });
+const nameEl = document.getElementById('name');
+const roomEl = document.getElementById('room');
+const joinBtn = document.getElementById('joinBtn');
 const shareBtn = document.getElementById('shareBtn');
-const stopBtn  = document.getElementById('stopBtn');
+const stopBtn = document.getElementById('stopBtn');
 const statusEl = document.getElementById('status');
-const permBox  = document.getElementById('perm');
-const acceptBt = document.getElementById('acceptBtn');
-const rejectBt = document.getElementById('rejectBtn');
-const localV   = document.getElementById('local');
-const remoteV  = document.getElementById('remote');
+const permBox = document.getElementById('perm');
+const acceptBtn = document.getElementById('acceptBtn');
+const rejectBtn = document.getElementById('rejectBtn');
+const localV = document.getElementById('local');
+const remoteV = document.getElementById('remote');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
 
 let roomId = null;
 let pc = null;
 let screenStream = null;
 let pendingRequesterId = null;
+let controlChannel = null;   // NEW
 
 const setStatus = (s) => statusEl.textContent = s || '';
 
-// 🔹 Function to hide inputs and labels
 function hideInputs() {
   document.getElementById('name').style.display = 'none';
   document.getElementById('room').style.display = 'none';
@@ -27,7 +28,7 @@ function hideInputs() {
   joinBtn.style.display = 'none';
 }
 
-// --- PeerConnection setup
+// --- PeerConnection setup (both sides)
 function ensurePC() {
   if (pc) return pc;
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
@@ -47,40 +48,66 @@ function ensurePC() {
     }
   };
 
+  // --- Viewer side: receive control channel
+  pc.ondatachannel = (event) => {
+    console.log("Viewer: got DataChannel", event.channel.label);
+
+    if (event.channel.label === "control") {
+      controlChannel = event.channel;
+
+      controlChannel.onopen = () => {
+        console.log("Viewer: control channel OPEN ✅");
+      };
+
+      controlChannel.onmessage = (e) => {
+        console.log("Viewer got message:", e.data);
+      };
+
+      // send keys from viewer → sharer
+      document.addEventListener("keydown", (e) => {
+        if (controlChannel.readyState === "open") {
+          controlChannel.send(`Key pressed: ${e.key}`);
+          console.log("Viewer: sent", e.key);
+        }
+      });
+    }
+  };
+
   return pc;
 }
 
-// --- Reset UI & stop sharing
+// --- Reset
 function resetSharingUI(msg = "Stopped") {
-  if (screenStream) {
-    screenStream.getTracks().forEach(t => t.stop());
-    screenStream = null;
-  }
+  if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+  screenStream = null;
   localV.srcObject = null;
   remoteV.srcObject = null;
-
   shareBtn.disabled = false;    
-  stopBtn.disabled = false;     
+  stopBtn.disabled = true;     
   joinBtn.disabled = false;     
   setStatus(msg);
+  if (pc) { pc.close(); pc = null; }
+  controlChannel = null;
 }
 
 // --- Join Room
 joinBtn.onclick = () => {
+  if (!nameEl.value.trim()) return alert('Enter name');
   roomId = roomEl.value.trim();
   if (!roomId) return alert('Enter room');
   socket.emit('join-room', roomId);
   joinBtn.disabled = true;
   shareBtn.disabled = false;
-  stopBtn.disabled = false; 
+  stopBtn.disabled = true; 
   setStatus('Joined ' + roomId);
+  ensurePC(); // Viewer PC ready from beginning
 };
 
-// --- Room full / peer joined
+// --- Room events
 socket.on('room-full', () => alert('Room full (max 2)'));
 socket.on('peer-joined', () => setStatus('Peer joined'));
 
-// --- Request to share screen
+// --- Request screen
 shareBtn.onclick = () => {
   if (!roomId) return alert('Join a room first');
   socket.emit('request-screen', { roomId, from: socket.id });
@@ -94,24 +121,33 @@ socket.on('screen-request', ({ from }) => {
   permBox.style.display = 'block';
 });
 
-// --- Accept request -> share screen
-acceptBt.onclick = async () => {
+// --- Accept request → sharer
+acceptBtn.onclick = async () => {
   if (!pendingRequesterId) return;
   socket.emit('permission-response', { to: pendingRequesterId, accepted: true });
   permBox.style.display = 'none';
-  
-  hideInputs(); // 🔹 Inputs hide
+  hideInputs();
 
   try {
     screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
     localV.srcObject = screenStream;
 
-    ensurePC();
-    screenStream.getTracks().forEach(track => pc.addTrack(track, screenStream));
+    const pcInstance = ensurePC();
 
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit('signal', { roomId, desc: pc.localDescription });
+    // --- SHARER side: create control channel
+    controlChannel = pcInstance.createDataChannel("control");
+    controlChannel.onopen = () => {
+      console.log("Sharer: control channel OPEN ✅");
+    };
+    controlChannel.onmessage = (e) => {
+      console.log("Sharer received from viewer →", e.data);
+    };
+
+    screenStream.getTracks().forEach(track => pcInstance.addTrack(track, screenStream));
+
+    const offer = await pcInstance.createOffer();
+    await pcInstance.setLocalDescription(offer);
+    socket.emit('signal', { roomId, desc: pcInstance.localDescription });
 
     shareBtn.disabled = true;  
     stopBtn.disabled = false;
@@ -121,12 +157,11 @@ acceptBt.onclick = async () => {
     alert('Screen capture failed: ' + err.message);
     resetSharingUI('');
   }
-
   pendingRequesterId = null;
 };
 
-// --- Reject request
-rejectBt.onclick = () => {
+// --- Reject
+rejectBtn.onclick = () => {
   if (!pendingRequesterId) return;
   socket.emit('permission-response', { to: pendingRequesterId, accepted: false });
   permBox.style.display = 'none';
@@ -134,37 +169,38 @@ rejectBt.onclick = () => {
   shareBtn.disabled = false; 
 };
 
-// --- Handle permission result for viewer
+// --- Permission result (viewer)
 socket.on('permission-result', (accepted) => {
   if (accepted) {
-    setStatus('Peer accepted. Connecting…');
-    shareBtn.disabled = true; 
-    hideInputs(); // 🔹 Inputs hide on viewer side
+    setStatus('Peer accepted. Waiting for connection…');
+    hideInputs();
+    ensurePC(); // PC ready before offer arrives
+    stopBtn.disabled = false;
   } else {
     setStatus('Peer rejected your request.');
     shareBtn.disabled = false; 
   }
 });
 
-// --- Signaling
+// --- Signaling (both sides)
 socket.on('signal', async ({ desc, candidate }) => {
   try {
-    ensurePC();
+    const pcInstance = ensurePC();
     if (desc) {
       if (desc.type === 'offer') {
-        await pc.setRemoteDescription(desc);
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        socket.emit('signal', { roomId, desc: pc.localDescription });
+        await pcInstance.setRemoteDescription(desc);
+        const answer = await pcInstance.createAnswer();
+        await pcInstance.setLocalDescription(answer);
+        socket.emit('signal', { roomId, desc: pcInstance.localDescription });
+        setStatus('Connected. Viewing peer screen.');
       } else if (desc.type === 'answer') {
-        await pc.setRemoteDescription(desc);
+        await pcInstance.setRemoteDescription(desc);
+        setStatus('Connected. Viewing peer screen.');
       }
     } else if (candidate) {
-      await pc.addIceCandidate(candidate);
+      await pcInstance.addIceCandidate(candidate);
     }
-  } catch (e) {
-    console.error('Signal error:', e);
-  }
+  } catch (e) { console.error('Signal error:', e); }
 });
 
 // --- Stop sharing
@@ -178,16 +214,13 @@ stopBtn.onclick = stopSharing;
 socket.on('remote-stopped', () => resetSharingUI('Peer stopped sharing'));
 socket.on('peer-left', () => resetSharingUI('Peer left'));
 
-// --- Cleanup on unload
+// --- Fullscreen
+fullscreenBtn.onclick = () => {
+  if (!document.fullscreenElement) remoteV.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+// --- Cleanup
 window.addEventListener('beforeunload', () => {
   if (roomId) socket.emit('stop-share', roomId);
 });
-
-// --- Fullscreen button
-fullscreenBtn.onclick = () => {
-  if (!document.fullscreenElement) {
-    remoteV.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
-};
