@@ -76,8 +76,8 @@ function ensurePC() {
           const rect = remoteV.getBoundingClientRect();
           controlChannel.send(JSON.stringify({
             type: "mousemove",
-            x: (e.clientX - rect.left)/rect.width,
-            y: (e.clientY - rect.top)/rect.height
+            x: (e.clientX - rect.left) / rect.width,
+            y: (e.clientY - rect.top) / rect.height
           }));
         }
       });
@@ -87,8 +87,8 @@ function ensurePC() {
           const rect = remoteV.getBoundingClientRect();
           controlChannel.send(JSON.stringify({
             type: "click",
-            x: (e.clientX - rect.left)/rect.width,
-            y: (e.clientY - rect.top)/rect.height,
+            x: (e.clientX - rect.left) / rect.width,
+            y: (e.clientY - rect.top) / rect.height,
             button: e.button
           }));
           console.log(`Viewer clicked at: ${(e.clientX - rect.left)/rect.width}, ${(e.clientY - rect.top)/rect.height}`);
@@ -159,27 +159,43 @@ acceptBtn.onclick = async () => {
     controlChannel = pcInstance.createDataChannel("control");
     controlChannel.onopen = ()=>console.log("Sharer: control channel OPEN ✅");
 
-    controlChannel.onmessage = e => {
-      try {
-        const data = JSON.parse(e.data);
-        if(data.type==="keydown") console.log("Sharer got key:",data.key);
-        if(data.type==="mousemove"||data.type==="click"){
-          const left = Math.floor(data.x*window.innerWidth);
-          const top = Math.floor(data.y*window.innerHeight);
-          cursor.style.left = left + "px";
-          cursor.style.top = top + "px";
-          cursor.style.display = "block";
-
-          if(data.type==="click"){
-            console.log(`Sharer received click at: ${data.x.toFixed(2)}, ${data.y.toFixed(2)}`);
-            cursor.style.background="blue";
-            setTimeout(()=>{cursor.style.background="red"},300);
-            const el = document.elementFromPoint(left,top);
-            if(el) el.click();
-          }
-        }
-      } catch(err){console.error(err);}
+    // ⚡ Save stream resolution
+    const settings = screenStream.getVideoTracks()[0].getSettings();
+    pcInstance.streamResolution = {
+      width: settings.width,
+      height: settings.height
     };
+
+ controlChannel.onmessage = e => {
+  try {
+    const data = JSON.parse(e.data);
+    // Keyboard
+    if(data.type==="keydown") console.log("Sharer got key:",data.key);
+
+    // Mouse / Touch
+    if(data.type==="mousemove" || data.type==="click") {
+      // Map to remote video element's size (viewport)
+      const left = data.x * remoteV.clientWidth;
+      const top = data.y * remoteV.clientHeight;
+
+      // Move cursor
+      cursor.style.left = left + "px";
+      cursor.style.top = top + "px";
+      cursor.style.display = "block";
+
+      // Click handling
+      if(data.type==="click"){
+        cursor.style.background = "blue";
+        setTimeout(()=>{cursor.style.background="red"},300);
+
+        // elementFromPoint expects viewport coordinates
+        const el = document.elementFromPoint(left, top);
+        if(el) el.click();
+      }
+    }
+  } catch(err){ console.error(err); }
+};
+
 
     screenStream.getTracks().forEach(track=>pcInstance.addTrack(track,screenStream));
     const offer = await pcInstance.createOffer();
