@@ -145,6 +145,15 @@ button:disabled {
   font-size: 1.2em;
 }
 
+video::-webkit-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+
 @media (max-width: 600px) {
   .panel {
     padding: 12px;
