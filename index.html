@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Screen Share — Remote Control</title>
   <link rel="stylesheet" href="main.css" />
 </head>
@@ -23,6 +24,12 @@
       <span id="status"></span>
     </div>
 
+    <div class="row">
+      <label>Online Users:</label>
+      <ul id="usersUl"></ul>
+    </div>
+
+
     <div id="perm" class="perm-box">
       <div id="permText">Peer wants to view your screen</div>
       <div class="actions">
@@ -34,7 +41,7 @@
     <div class="videos">
       <video id="local" autoplay muted playsinline title="Your screen preview"></video>
       <div class="remote-wrapper">
-        <video id="remote" autoplay playsinline title="Remote screen"></video>
+        <video id="remote" autoplay muted playsinline title="Remote screen"></video>
         <button id="fullscreenBtn" type="button">⛶</button>
       </div>
     </div>

@@ -78,7 +78,6 @@ button:disabled {
   box-shadow: none;
 }
 
-#joinBtn { background: #28a745; color: white; }
 #joinBtn { background: var(--success); color: var(--text-light); }
 
 #shareBtn { background: #1a73e8; color: white; }
