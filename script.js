@@ -14,7 +14,7 @@ const rejectBtn = document.getElementById('rejectBtn');
 const localV = document.getElementById('local');
 const remoteV = document.getElementById('remote');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
-const usersUl = document.getElementById("usersUl"); // ✅ new
+const usersUl = document.getElementById("usersUl"); // ✅ users list
 
 // Remote cursor (red dot)
 const cursor = document.createElement('div');
@@ -36,6 +36,7 @@ let screenStream = null;
 let pendingRequesterId = null;
 let controlChannel = null;
 let cursorX = 0, cursorY = 0; // track sharer cursor
+let myName = ""; // ✅ store current user name
 
 const setStatus = s => statusEl.textContent = s || '';
 function hideInputs() {
@@ -131,28 +132,32 @@ function resetSharingUI(msg="Stopped") {
 // --- Join Room
 joinBtn.onclick = () => {
   if(!nameEl.value.trim()) return alert('Enter name');
+  myName = nameEl.value.trim(); // ✅ store name
   roomId = roomEl.value.trim();
   if(!roomId) return alert('Enter room');
-  socket.emit('join-room', { roomId, name: nameEl.value.trim() });
+
+  socket.emit('join-room', { roomId, name: myName });
   joinBtn.disabled = true;
   shareBtn.disabled = false;
   stopBtn.disabled = true;
   setStatus('Joined ' + roomId);
   ensurePC();
+
+  // ✅ Tell server my name (for online users list)
+  socket.emit("set-name", myName);
 };
 
 // --- Room events
 socket.on('room-full', () => alert('Room full (max 2)'));
 socket.on('peer-joined', () => setStatus('Peer joined'));
 
-// --- Online users update (NEW)
-// --- Online users update (with "You" highlight)
+// --- Online users update
 socket.on("users-update", (users) => {
   usersUl.innerHTML = "";
   users.forEach(u => {
     const li = document.createElement("li");
 
-    if (u === nameEl.value.trim()) {
+    if (u === myName) {
       li.innerHTML = `<strong>${u} (You)</strong>`;
       li.style.color = "green";
     } else {
@@ -162,7 +167,6 @@ socket.on("users-update", (users) => {
     usersUl.appendChild(li);
   });
 });
-
 
 // --- Request screen
 shareBtn.onclick = () => {
@@ -198,7 +202,6 @@ acceptBtn.onclick = async () => {
         const data = JSON.parse(e.data);
 
         if (data.type === "mousemove" || data.type === "click") {
-          const rect = remoteV.getBoundingClientRect();
           const viewportX = data.x * window.innerWidth;
           const viewportY = data.y * window.innerHeight;
 
