@@ -135,7 +135,7 @@ joinBtn.onclick = () => {
   myName = nameEl.value.trim(); // ✅ store name
   roomId = roomEl.value.trim();
   if(!roomId) return alert('Enter room');
-
+  socket.emit("set-name", myName);
   socket.emit('join-room', { roomId, name: myName });
   joinBtn.disabled = true;
   shareBtn.disabled = false;
