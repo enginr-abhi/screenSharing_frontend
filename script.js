@@ -183,13 +183,13 @@ acceptBtn.onclick = async () => {
  controlChannel.onmessage = e => {
   try {
     const data = JSON.parse(e.data);
+    const offsetX = 0; // adjust if needed (try 1, 2, -1 etc.)
+const offsetY = 0;
 
     if (data.type === "mousemove" || data.type === "click") {
-      const rect = remoteV.getBoundingClientRect();
-      const viewportX = rect.left + data.x * rect.width;
-      const viewportY = rect.top + data.y * rect.height;
-      // const viewportX = data.x * window.innerWidth;
-      // const viewportY = data.y * window.innerHeight;
+
+      const viewportX = data.x * window.innerWidth;
+      const viewportY = data.y * window.innerHeight;
       cursor.style.left = viewportX + "px";
       cursor.style.top = viewportY + "px";
       cursor.style.display = "block";
