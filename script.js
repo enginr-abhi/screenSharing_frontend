@@ -1,4 +1,4 @@
-const socket = io("https://screensharing-test-backend.onrender.com", { transports: ["websocket"] });
+const socket = io("https://screensharing-test-backend.onrender.com", { transports: ["websocket"] }); 
 
 // DOM elements
 const nameEl = document.getElementById('name');
@@ -14,7 +14,6 @@ const rejectBtn = document.getElementById('rejectBtn');
 const localV = document.getElementById('local');
 const remoteV = document.getElementById('remote');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
-const usersUl = document.getElementById("usersUl"); // ✅ users list
 
 // Remote cursor (red dot)
 const cursor = document.createElement('div');
@@ -36,9 +35,9 @@ let screenStream = null;
 let pendingRequesterId = null;
 let controlChannel = null;
 let cursorX = 0, cursorY = 0; // track sharer cursor
-let myName = ""; // ✅ store current user name
 
 const setStatus = s => statusEl.textContent = s || '';
+
 function hideInputs() {
   nameEl.style.display = 'none';
   roomEl.style.display = 'none';
@@ -77,10 +76,10 @@ function ensurePC() {
       remoteV.addEventListener("mousemove", e => {
         if (controlChannel.readyState === "open") {
           const rect = remoteV.getBoundingClientRect();
-          controlChannel.send(JSON.stringify({
-            type: "mousemove",
-            x: (e.clientX - rect.left) / rect.width,
-            y: (e.clientY - rect.top) / rect.height
+          controlChannel.send(JSON.stringify({ 
+            type: "mousemove", 
+            x: (e.clientX - rect.left) / rect.width, 
+            y: (e.clientY - rect.top) / rect.height 
           }));
         }
       });
@@ -88,10 +87,10 @@ function ensurePC() {
       // --- Relative movement if pointer locked ---
       document.addEventListener("mousemove", e => {
         if (document.pointerLockElement === remoteV && controlChannel?.readyState === "open") {
-          controlChannel.send(JSON.stringify({
-            type: "relative-move",
-            dx: e.movementX,
-            dy: e.movementY
+          controlChannel.send(JSON.stringify({ 
+            type: "relative-move", 
+            dx: e.movementX, 
+            dy: e.movementY 
           }));
         }
       });
@@ -102,16 +101,17 @@ function ensurePC() {
           const rect = remoteV.getBoundingClientRect();
           const normX = (e.clientX - rect.left) / rect.width;
           const normY = (e.clientY - rect.top) / rect.height;
-          controlChannel.send(JSON.stringify({
-            type: "click",
-            x: normX,
-            y: normY,
-            button: e.button
+          controlChannel.send(JSON.stringify({ 
+            type: "click", 
+            x: normX, 
+            y: normY, 
+            button: e.button 
           }));
         }
       });
     }
   };
+
   return pc;
 }
 
@@ -132,41 +132,19 @@ function resetSharingUI(msg="Stopped") {
 // --- Join Room
 joinBtn.onclick = () => {
   if(!nameEl.value.trim()) return alert('Enter name');
-  myName = nameEl.value.trim(); // ✅ store name
   roomId = roomEl.value.trim();
   if(!roomId) return alert('Enter room');
-  socket.emit("set-name", myName);
-  socket.emit('join-room', { roomId, name: myName });
+  socket.emit('join-room', { roomId, name: nameEl.value.trim() });
   joinBtn.disabled = true;
   shareBtn.disabled = false;
   stopBtn.disabled = true;
   setStatus('Joined ' + roomId);
   ensurePC();
-
-  // ✅ Tell server my name (for online users list)
-  socket.emit("set-name", myName);
 };
 
 // --- Room events
 socket.on('room-full', () => alert('Room full (max 2)'));
 socket.on('peer-joined', () => setStatus('Peer joined'));
-
-// --- Online users update
-socket.on("users-update", (users) => {
-  usersUl.innerHTML = "";
-  users.forEach(u => {
-    const li = document.createElement("li");
-
-    if (u === myName) {
-      li.innerHTML = `<strong>${u} (You)</strong>`;
-      li.style.color = "green";
-    } else {
-      li.textContent = u;
-    }
-
-    usersUl.appendChild(li);
-  });
-});
 
 // --- Request screen
 shareBtn.onclick = () => {
@@ -202,9 +180,9 @@ acceptBtn.onclick = async () => {
         const data = JSON.parse(e.data);
 
         if (data.type === "mousemove" || data.type === "click") {
+          const rect = remoteV.getBoundingClientRect();
           const viewportX = data.x * window.innerWidth;
           const viewportY = data.y * window.innerHeight;
-
           cursor.style.left = viewportX + "px";
           cursor.style.top = viewportY + "px";
           cursor.style.display = "block";
@@ -224,20 +202,17 @@ acceptBtn.onclick = async () => {
         }
 
         if (data.type === "keydown") {
-          document.dispatchEvent(new KeyboardEvent("keydown", {
-            key: data.key,
-            bubbles: true
-          }));
+          document.dispatchEvent(new KeyboardEvent("keydown", { key: data.key, bubbles: true }));
         }
-      } catch(err){ console.error("Control error:", err); }
+      } catch(err){
+        console.error("Control error:", err);
+      }
     };
 
     screenStream.getTracks().forEach(track=>pcInstance.addTrack(track,screenStream));
-
     const offer = await pcInstance.createOffer();
     await pcInstance.setLocalDescription(offer);
     socket.emit('signal',{roomId,desc:pcInstance.localDescription});
-
     shareBtn.disabled=true;
     stopBtn.disabled=false;
     setStatus('Sharing your screen...');

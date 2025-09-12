@@ -22,50 +22,6 @@ header {
   color: white;
   box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
-/* Online Users Box */
-#onlineList {
-  background: #1e1e2f;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin: 15px 0;
-  color: #f0f0f0;
-  font-family: "Segoe UI", sans-serif;
-  max-width: 250px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-#onlineList h3 {
-  margin: 0 0 10px 0;
-  font-size: 16px;
-  color: #00bfff;
-  font-weight: 600;
-  border-bottom: 1px solid #444;
-  padding-bottom: 6px;
-}
-
-#onlineList ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-#onlineList li {
-  padding: 6px 10px;
-  margin: 4px 0;
-  border-radius: 6px;
-  background: #2b2b3d;
-  transition: background 0.2s;
-}
-
-#onlineList li:hover {
-  background: #3a3a52;
-}
-
-#onlineList li span.you {
-  color: #4caf50;
-  font-weight: 600;
-}
 
 /* --- Panel --- */
 .panel {
@@ -122,6 +78,7 @@ button:disabled {
   box-shadow: none;
 }
 
+#joinBtn { background: #28a745; color: white; }
 #joinBtn { background: var(--success); color: var(--text-light); }
 
 #shareBtn { background: #1a73e8; color: white; }
