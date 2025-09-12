@@ -183,12 +183,18 @@ acceptBtn.onclick = async () => {
  controlChannel.onmessage = e => {
   try {
     const data = JSON.parse(e.data);
-
+// Use video element's actual position for cursor mapping
     if (data.type === "mousemove" || data.type === "click") {
-      const viewportX = data.x * window.innerWidth;
-      const viewportY = data.y * window.innerHeight;
-      cursor.style.left = viewportX + "px";
-      cursor.style.top = viewportY + "px";
+      // const viewportX = data.x * window.innerWidth;
+      // const viewportY = data.y * window.innerHeight;
+      // cursor.style.left = viewportX + "px";
+      // cursor.style.top = viewportY + "px";
+      const rect = remoteV.getBoundingClientRect();
+const x = data.x * rect.width;
+const y = data.y * rect.height;
+cursor.style.left = (rect.left + x) + "px";
+cursor.style.top = (rect.top + y) + "px";
+
       cursor.style.display = "block";
 
       // 🔴 Handle click event
@@ -198,7 +204,8 @@ acceptBtn.onclick = async () => {
         setTimeout(() => cursor.style.background = "red", 300);
 
         // 🔍 Check if clicked element is the stop button
-        const clickedElement = document.elementFromPoint(viewportX, viewportY);
+        // const clickedElement = document.elementFromPoint(viewportX, viewportY);
+        const clickedElement = document.elementFromPoint(rect.left + x, rect.top + y);
         if (clickedElement && clickedElement.id === "stopBtn") {
           console.log("🔴 Remote viewer clicked Stop button!");
           stopSharing();
