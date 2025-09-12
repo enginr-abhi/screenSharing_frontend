@@ -60,6 +60,8 @@ function ensurePC() {
     remoteV.play().catch(console.error);
   };
 
+  let listenersAdded = false;
+  
   pc.ondatachannel = (event) => {
     if (event.channel.label === "control") {
       controlChannel = event.channel;
@@ -191,6 +193,7 @@ acceptBtn.onclick = async () => {
 
       // 🔴 Handle click event
       if (data.type === "click") {
+        cursor.classList.add("clicked");
         cursor.style.background = "blue";
         setTimeout(() => cursor.style.background = "red", 300);
 
@@ -290,16 +293,33 @@ socket.on('remote-stopped',()=>resetSharingUI('Peer stopped sharing'));
 socket.on('peer-left',()=>resetSharingUI('Peer left'));
 
 // --- Fullscreen + pointer lock
-fullscreenBtn.onclick = ()=>{
-  if(!document.fullscreenElement){
-    remoteV.requestFullscreen().then(()=>{
-      remoteV.requestPointerLock();
-    });
-  } else {
-    document.exitFullscreen();
-    document.exitPointerLock();
+// fullscreenBtn.onclick = ()=>{
+//   if(!document.fullscreenElement){
+//     remoteV.requestFullscreen().then(()=>{
+//       remoteV.requestPointerLock();
+//     });
+//   } else {
+//     document.exitFullscreen();
+//     document.exitPointerLock();
+//   }
+// };
+
+fullscreenBtn.onclick = async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await remoteV.requestFullscreen();
+      await remoteV.requestPointerLock();
+    } else {
+      await document.exitFullscreen();
+      if (document.pointerLockElement) {
+        document.exitPointerLock();
+      }
+    }
+  } catch (err) {
+    console.error("Fullscreen/pointer lock error:", err);
   }
 };
+
 
 window.addEventListener('beforeunload',()=>{
   if(roomId) socket.emit('stop-share',roomId);
