@@ -78,13 +78,15 @@ document.addEventListener("keydown", e => {
 
 
       // --- Normalized mousemove inside video ---
-      remoteV.addEventListener("mousemove", e => {
-        if (controlChannel.readyState === "open") {
-          const rect = remoteV.getBoundingClientRect();
+  remoteV.addEventListener("mousemove", e => {
+    if (controlChannel.readyState === "open") {
+      const rect = remoteV.getBoundingClientRect();
+      const normX = (e.clientX - rect.left) / rect.width;
+      const normY = (e.clientY - rect.top) / rect.height;
           controlChannel.send(JSON.stringify({ 
             type: "mousemove", 
-            x: (e.clientX - rect.left) / rect.width, 
-            y: (e.clientY - rect.top) / rect.height 
+            x: normX, 
+            y: normY 
           }));
         }
       });
@@ -320,6 +322,21 @@ fullscreenBtn.onclick = async () => {
     }
   } catch (err) {
     console.error("Fullscreen/pointer lock error:", err);
+  }
+};
+
+remoteV.onloadedmetadata = () => {
+  const aspectRatio = remoteV.videoWidth / remoteV.videoHeight;
+  const container = document.getElementById("videoWrapper");
+
+  if (window.innerWidth / window.innerHeight > aspectRatio) {
+    // Too wide
+    container.style.width = `${window.innerHeight * aspectRatio}px`;
+    container.style.height = `${window.innerHeight}px`;
+  } else {
+    // Too tall
+    container.style.width = `${window.innerWidth}px`;
+    container.style.height = `${window.innerWidth / aspectRatio}px`;
   }
 };
 
