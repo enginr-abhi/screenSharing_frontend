@@ -189,12 +189,18 @@ acceptBtn.onclick = async () => {
 const offsetY = 0;
 
     if (data.type === "mousemove" || data.type === "click") {
+     const video = document.getElementById("local");
+     const rect = video.getBoundingClientRect();
 
-      const viewportX = data.x * window.innerWidth;
-      const viewportY = data.y * window.innerHeight;
-      cursor.style.left = viewportX + "px";
-      cursor.style.top = viewportY + "px";
-      cursor.style.display = "block";
+      // const viewportX = data.x * window.innerWidth;
+      // const viewportY = data.y * window.innerHeight;
+      // cursor.style.left = viewportX + "px";
+      // cursor.style.top = viewportY + "px";
+        const x = rect.left + (data.x * rect.width);
+        const y = rect.top + (data.y * rect.height);
+        cursor.style.left = x + "px";
+        cursor.style.top = y + "px";
+        cursor.style.display = "block";
 
       // 🔴 Handle click event
       if (data.type === "click") {

@@ -218,7 +218,10 @@ button:focus {
   z-index: 9999;
   transition: background 0.3s ease;
 }
-
+#local{
+  position: relative;
+  z-index: 1;
+}
 #remoteCursor.clicked {
   background: blue;
 }
