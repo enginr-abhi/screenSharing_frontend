@@ -66,11 +66,14 @@ function ensurePC() {
       controlChannel.onopen = () => console.log("Viewer: control channel OPEN ✅");
 
       // Send key events
-      document.addEventListener("keydown", e => {
-        if (controlChannel.readyState === "open") {
-          controlChannel.send(JSON.stringify({ type: "keydown", key: e.key }));
-        }
-      });
+document.addEventListener("keydown", e => {
+  if (controlChannel?.readyState === "open") {
+    const keyEvent = { type: "keydown", key: e.key };
+    controlChannel.send(JSON.stringify(keyEvent));
+    console.log("🧑‍💻 You typed:", e.key);  // 👈 viewer logs
+  }
+});
+
 
       // --- Normalized mousemove inside video ---
       remoteV.addEventListener("mousemove", e => {
@@ -209,6 +212,7 @@ acceptBtn.onclick = async () => {
     }
 
     if (data.type === "keydown") {
+      console.log("📥 Received key from viewer:", data.key);
       document.dispatchEvent(new KeyboardEvent("keydown", { key: data.key, bubbles: true }));
     }
   } catch(err){
