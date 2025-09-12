@@ -9,6 +9,12 @@
 }
 
 /* --- Reset --- */
+body, html {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-dark); color: var(--text-light); }
 
@@ -239,11 +245,10 @@ button:focus {
 }
 
 #remote {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 100vw;
+  height: 100vh;
+  object-fit: contain; /* or use 'cover' if you prefer */
   background: black;
-  display: block;
 }
 
 #local {
