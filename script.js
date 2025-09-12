@@ -183,8 +183,11 @@ acceptBtn.onclick = async () => {
     const data = JSON.parse(e.data);
 
     if (data.type === "mousemove" || data.type === "click") {
-      const viewportX = data.x * window.innerWidth;
-      const viewportY = data.y * window.innerHeight;
+    //  const viewportX = data.x * window.innerWidth;
+    //  const viewportY = data.y * window.innerHeight;
+     const rect = remoteV.getBoundingClientRect();
+     const viewportX = rect.left + data.x * rect.width;
+     const viewportY = rect.top + data.y * rect.height;
       cursor.style.left = viewportX + "px";
       cursor.style.top = viewportY + "px";
       cursor.style.display = "block";
