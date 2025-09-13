@@ -192,8 +192,8 @@ const offsetY = 0;
      const video = document.getElementById("local");
      const rect = video.getBoundingClientRect();
 
-      // const viewportX = data.x * window.innerWidth;
-      // const viewportY = data.y * window.innerHeight;
+      const viewportX = data.x * window.innerWidth;
+      const viewportY = data.y * window.innerHeight;
       // cursor.style.left = viewportX + "px";
       // cursor.style.top = viewportY + "px";
         const x = rect.left + (data.x * rect.width);
