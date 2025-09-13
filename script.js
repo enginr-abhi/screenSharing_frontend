@@ -26,7 +26,7 @@ cursor.style.borderRadius = "50%";
 cursor.style.pointerEvents = "none";
 cursor.style.display = "none";
 cursor.style.zIndex = "9999";
-document.body.appendChild(cursor);
+document.getElementById("sharerWrapper").appendChild(cursor);
 
 // State
 let roomId = null;
@@ -183,14 +183,17 @@ acceptBtn.onclick = async () => {
     const data = JSON.parse(e.data);
 
     if (data.type === "mousemove" || data.type === "click") {
-      const viewportX = data.x * window.innerWidth;
-      const viewportY = data.y * window.innerHeight;
+      const wrapper = document.getElementById("sharerWrapper");
+      const rect = wrapper.getBoundingClientRect();
+      const viewportX = data.x * rect.innerWidth;
+      const viewportY = data.y * rect.innerHeight;
       cursor.style.left = viewportX + "px";
       cursor.style.top = viewportY + "px";
       cursor.style.display = "block";
 
       // 🔴 Handle click event
       if (data.type === "click") {
+        cursor.classList.add("clicked");
         cursor.style.background = "blue";
         setTimeout(() => cursor.style.background = "red", 300);
 

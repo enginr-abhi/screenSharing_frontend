@@ -243,6 +243,9 @@ button:focus {
   overflow: hidden;
 }
 
+#sharerWrapper {
+  position: relative;
+}
 
 
 .remote-wrapper {
