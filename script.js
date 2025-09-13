@@ -60,8 +60,6 @@ function ensurePC() {
     remoteV.play().catch(console.error);
   };
 
-  let listenersAdded = false;
-  
   pc.ondatachannel = (event) => {
     if (event.channel.label === "control") {
       controlChannel = event.channel;
@@ -78,15 +76,13 @@ document.addEventListener("keydown", e => {
 
 
       // --- Normalized mousemove inside video ---
-  remoteV.addEventListener("mousemove", e => {
-    if (controlChannel.readyState === "open") {
-      const rect = remoteV.getBoundingClientRect();
-      const normX = (e.clientX - rect.left) / rect.width;
-      const normY = (e.clientY - rect.top) / rect.height;
+      remoteV.addEventListener("mousemove", e => {
+        if (controlChannel.readyState === "open") {
+          const rect = remoteV.getBoundingClientRect();
           controlChannel.send(JSON.stringify({ 
             type: "mousemove", 
-            x: normX, 
-            y: normY 
+            x: (e.clientX - rect.left) / rect.width, 
+            y: (e.clientY - rect.top) / rect.height 
           }));
         }
       });
@@ -185,26 +181,16 @@ acceptBtn.onclick = async () => {
  controlChannel.onmessage = e => {
   try {
     const data = JSON.parse(e.data);
-    const offsetX = 0; // adjust if needed (try 1, 2, -1 etc.)
-const offsetY = 0;
 
     if (data.type === "mousemove" || data.type === "click") {
-     const video = document.getElementById("local");
-     const rect = video.getBoundingClientRect();
-
       const viewportX = data.x * window.innerWidth;
       const viewportY = data.y * window.innerHeight;
-      // cursor.style.left = viewportX + "px";
-      // cursor.style.top = viewportY + "px";
-        const x = rect.left + (data.x * rect.width);
-        const y = rect.top + (data.y * rect.height);
-        cursor.style.left = x + "px";
-        cursor.style.top = y + "px";
-        cursor.style.display = "block";
+      cursor.style.left = viewportX + "px";
+      cursor.style.top = viewportY + "px";
+      cursor.style.display = "block";
 
       // 🔴 Handle click event
       if (data.type === "click") {
-        cursor.classList.add("clicked");
         cursor.style.background = "blue";
         setTimeout(() => cursor.style.background = "red", 300);
 
@@ -304,48 +290,16 @@ socket.on('remote-stopped',()=>resetSharingUI('Peer stopped sharing'));
 socket.on('peer-left',()=>resetSharingUI('Peer left'));
 
 // --- Fullscreen + pointer lock
-// fullscreenBtn.onclick = ()=>{
-//   if(!document.fullscreenElement){
-//     remoteV.requestFullscreen().then(()=>{
-//       remoteV.requestPointerLock();
-//     });
-//   } else {
-//     document.exitFullscreen();
-//     document.exitPointerLock();
-//   }
-// };
-
-fullscreenBtn.onclick = async () => {
-  try {
-    if (!document.fullscreenElement) {
-      await remoteV.requestFullscreen();
-      await remoteV.requestPointerLock();
-    } else {
-      await document.exitFullscreen();
-      if (document.pointerLockElement) {
-        document.exitPointerLock();
-      }
-    }
-  } catch (err) {
-    console.error("Fullscreen/pointer lock error:", err);
-  }
-};
-
-remoteV.onloadedmetadata = () => {
-  const aspectRatio = remoteV.videoWidth / remoteV.videoHeight;
-  const container = document.getElementById("videoWrapper");
-
-  if (window.innerWidth / window.innerHeight > aspectRatio) {
-    // Too wide
-    container.style.width = `${window.innerHeight * aspectRatio}px`;
-    container.style.height = `${window.innerHeight}px`;
+fullscreenBtn.onclick = ()=>{
+  if(!document.fullscreenElement){
+    remoteV.requestFullscreen().then(()=>{
+      remoteV.requestPointerLock();
+    });
   } else {
-    // Too tall
-    container.style.width = `${window.innerWidth}px`;
-    container.style.height = `${window.innerWidth / aspectRatio}px`;
+    document.exitFullscreen();
+    document.exitPointerLock();
   }
 };
-
 
 window.addEventListener('beforeunload',()=>{
   if(roomId) socket.emit('stop-share',roomId);
