@@ -9,17 +9,17 @@
 }
 
 /* --- Reset --- */
-* {
+*{
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-html, body {
+html, body { 
   height: 100%;
   background: var(--bg-dark);
-  color: var(--text-light);
+  color: var(--text-light); 
 }
 
 /* --- Header --- */
@@ -34,6 +34,7 @@ header {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+
 /* --- Panel --- */
 .panel {
   background: rgba(42, 42, 58, 0.85);
@@ -41,8 +42,8 @@ header {
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
-  animation: fadeSlideUp 0.5s ease-in-out;
 }
+
 
 /* --- Rows --- */
 .row {
@@ -72,6 +73,7 @@ input:focus {
   outline: none;
 }
 
+
 /* --- Buttons --- */
 button {
   padding: 12px 18px;
@@ -88,19 +90,34 @@ button {
 
 button:hover:not(:disabled) {
   background-color: #1669c1;
-  transform: translateY(-2px);
+  transform: scale(1.05);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 button:active:not(:disabled) {
-  transform: translateY(1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transform: scale(0.97);
 }
 
 button:disabled {
   background-color: #555;
   cursor: not-allowed;
+}
+
+
+button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+}
+
+button:disabled {
+  background: #555;
+  cursor: not-allowed;
   box-shadow: none;
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 button:focus-visible {
@@ -112,7 +129,13 @@ button:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* --- Specific button IDs --- */
+button:focus {
+  /* fallback for browsers without :focus-visible */
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Specific button IDs */
 #joinBtn {
   background: var(--success);
   color: var(--text-light);
@@ -134,10 +157,9 @@ button:focus:not(:focus-visible) {
   color: var(--text-light);
   flex: 1;
 }
-
 .btn-ok:hover,
 .btn-ok:focus-visible {
-  background: #218838;
+  background: #218838; /* darker green */
   box-shadow: 0 0 8px var(--success);
 }
 
@@ -146,10 +168,9 @@ button:focus:not(:focus-visible) {
   color: var(--text-light);
   flex: 1;
 }
-
 .btn-no:hover,
 .btn-no:focus-visible {
-  background: #c82333;
+  background: #c82333; /* darker red */
   box-shadow: 0 0 8px var(--danger);
 }
 
@@ -167,7 +188,7 @@ button:focus:not(:focus-visible) {
   background: #3a3a4a;
   padding: 16px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 #permText {
@@ -195,15 +216,26 @@ button:focus:not(:focus-visible) {
   pointer-events: none;
   display: none;
   z-index: 9999;
+  transition: background 0.3s ease;
 }
-
+#local{
+  position: relative;
+  z-index: 1;
+}
 #remoteCursor.clicked {
   background: blue;
 }
 
-/* --- Video Wrapper --- */
-#videoWrapper {
-  position: relative;
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* --- Videos --- */
+.videos {
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 60vh;
   background: black;
@@ -211,19 +243,26 @@ button:focus:not(:focus-visible) {
   overflow: hidden;
 }
 
-/* --- Videos --- */
-#remote,
-#local {
+
+
+.remote-wrapper {
+  margin: auto;
+  overflow: hidden;
+  position: relative;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  background: black;
+}
+
+#remote {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* or use 'cover' if you prefer */
   background: black;
 }
 
 #local {
   display: none;
-  position: relative;
-  z-index: 1;
 }
 
 /* --- Fullscreen Button --- */
@@ -232,7 +271,7 @@ button:focus:not(:focus-visible) {
   bottom: 10px;
   right: 10px;
   z-index: 10;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0,0,0,0.6);
   color: var(--text-light);
   border: none;
   padding: 6px 10px;
@@ -249,33 +288,18 @@ video::-webkit-media-controls {
 video::-webkit-media-controls-enclosure {
   display: none !important;
 }
-
-/* --- Animations --- */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.panel {
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-@keyframes fadeSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* --- Media Queries --- */
 @media (max-height: 500px) {
-  #videoWrapper {
+  .videos {
     height: 80vh;
   }
 }
@@ -285,11 +309,9 @@ video::-webkit-media-controls-enclosure {
     padding: 12px;
     margin: 8px;
   }
-
-  #videoWrapper {
+  .videos {
     height: 40vh;
   }
-
   #fullscreenBtn {
     padding: 12px 16px;
     font-size: 1.5em;
@@ -305,10 +327,5 @@ video::-webkit-media-controls-enclosure {
   label {
     min-width: auto;
     margin-bottom: 4px;
-  }
-
-  input,
-  button {
-    width: 100%;
   }
 }
