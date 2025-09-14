@@ -66,14 +66,11 @@ function ensurePC() {
       controlChannel.onopen = () => console.log("Viewer: control channel OPEN ✅");
 
       // Send key events
-document.addEventListener("keydown", e => {
-  if (controlChannel?.readyState === "open") {
-    const keyEvent = { type: "keydown", key: e.key };
-    controlChannel.send(JSON.stringify(keyEvent));
-    console.log("🧑‍💻 You typed:", e.key);  // 👈 viewer logs
-  }
-});
-
+      document.addEventListener("keydown", e => {
+        if (controlChannel.readyState === "open") {
+          controlChannel.send(JSON.stringify({ type: "keydown", key: e.key }));
+        }
+      });
 
       // --- Normalized mousemove inside video ---
       remoteV.addEventListener("mousemove", e => {
@@ -178,48 +175,39 @@ acceptBtn.onclick = async () => {
     controlChannel.onopen = ()=>console.log("Sharer: control channel OPEN ✅");
 
     // --- Handle control events from viewer ---
- controlChannel.onmessage = e => {
-  try {
-    const data = JSON.parse(e.data);
+    controlChannel.onmessage = e => {
+      try {
+        const data = JSON.parse(e.data);
 
-    if (data.type === "mousemove" || data.type === "click") {
-      const viewportX = data.x * window.innerWidth;
-      const viewportY = data.y * window.innerHeight;
-      cursor.style.left = viewportX + "px";
-      cursor.style.top = viewportY + "px";
-      cursor.style.display = "block";
+        if (data.type === "mousemove" || data.type === "click") {
+          const rect = remoteV.getBoundingClientRect();
+          const viewportX = data.x * window.innerWidth;
+          const viewportY = data.y * window.innerHeight;
+          cursor.style.left = viewportX + "px";
+          cursor.style.top = viewportY + "px";
+          cursor.style.display = "block";
 
-      // 🔴 Handle click event
-      if (data.type === "click") {
-        cursor.style.background = "blue";
-        setTimeout(() => cursor.style.background = "red", 300);
-
-        // 🔍 Check if clicked element is the stop button
-        const clickedElement = document.elementFromPoint(viewportX, viewportY);
-        if (clickedElement && clickedElement.id === "stopBtn") {
-          console.log("🔴 Remote viewer clicked Stop button!");
-          stopSharing();
+          if (data.type === "click") {
+            cursor.style.background = "blue";
+            setTimeout(() => cursor.style.background = "red", 300);
+          }
         }
+
+        if (data.type === "relative-move") {
+          cursorX += data.dx;
+          cursorY += data.dy;
+          cursor.style.left = cursorX + "px";
+          cursor.style.top = cursorY + "px";
+          cursor.style.display = "block";
+        }
+
+        if (data.type === "keydown") {
+          document.dispatchEvent(new KeyboardEvent("keydown", { key: data.key, bubbles: true }));
+        }
+      } catch(err){
+        console.error("Control error:", err);
       }
-    }
-
-    if (data.type === "relative-move") {
-      cursorX += data.dx;
-      cursorY += data.dy;
-      cursor.style.left = cursorX + "px";
-      cursor.style.top = cursorY + "px";
-      cursor.style.display = "block";
-    }
-
-    if (data.type === "keydown") {
-      console.log("📥 Received key from viewer:", data.key);
-      document.dispatchEvent(new KeyboardEvent("keydown", { key: data.key, bubbles: true }));
-    }
-  } catch(err){
-    console.error("Control error:", err);
-  }
-};
-
+    };
 
     screenStream.getTracks().forEach(track=>pcInstance.addTrack(track,screenStream));
     const offer = await pcInstance.createOffer();
