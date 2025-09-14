@@ -69,6 +69,7 @@ function ensurePC() {
       document.addEventListener("keydown", e => {
         if (controlChannel.readyState === "open") {
           controlChannel.send(JSON.stringify({ type: "keydown", key: e.key }));
+          console.log("🧑‍💻 You typed:", e.key);  // 👈 viewer logs
         }
       });
 
@@ -209,6 +210,7 @@ acceptBtn.onclick = async () => {
     }
 
     if (data.type === "keydown") {
+       console.log("📥 Received key from viewer:", data.key);
       document.dispatchEvent(new KeyboardEvent("keydown", { key: data.key, bubbles: true }));
     }
   } catch(err){
