@@ -14,6 +14,7 @@ const rejectBtn = document.getElementById('rejectBtn');
 const localV = document.getElementById('local');
 const remoteV = document.getElementById('remote');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
+const remoteWrapper = document.getElementById('remoteWrapper');
 
 // Remote cursor (red dot)
 const cursor = document.createElement('div');
