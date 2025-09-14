@@ -9,41 +9,32 @@
 }
 
 /* --- Reset --- */
-*{
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-html, body { 
-  height: 100%;
-  background: var(--bg-dark);
-  color: var(--text-light); 
-}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #1e1e2f; color: #fff; }
 
 /* --- Header --- */
 header {
-  padding: 20px;
+  padding: 16px;
   background: linear-gradient(90deg, #1a73e8, #4285f4);
   text-align: center;
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: bold;
   color: white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
 }
-
 
 /* --- Panel --- */
 .panel {
-  background: rgba(42, 42, 58, 0.85);
-  backdrop-filter: blur(8px);
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
+  padding: 16px;
+  background: #2a2a3a;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 800px;
+  margin: 16px auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.5);
 }
-
 
 /* --- Rows --- */
 .row {
@@ -59,50 +50,22 @@ label {
 }
 
 input {
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid #444;
-  background-color: #1e1e2f;
-  color: #eee;
-  font-size: 15px;
-  transition: border 0.3s ease;
-}
-
-input:focus {
-  border: 1px solid var(--primary);
-  outline: none;
-}
-
-
-/* --- Buttons --- */
-button {
-  padding: 12px 18px;
-  border-radius: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
   border: none;
-  font-weight: 600;
+  flex: 1;
+  font-size: 14px;
+}
+
+button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 15px;
-  transition: 0.25s ease all;
-  background-color: #1a73e8;
-  color: #fff;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
-
-button:hover:not(:disabled) {
-  background-color: #1669c1;
-  transform: scale(1.05);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-button:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-button:disabled {
-  background-color: #555;
-  cursor: not-allowed;
-}
-
 
 button:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -115,69 +78,19 @@ button:disabled {
   box-shadow: none;
 }
 
+#joinBtn { background: #28a745; color: white; }
+#joinBtn { background: var(--success); color: var(--text-light); }
+
+#shareBtn { background: #1a73e8; color: white; }
+#stopBtn { background: #dc3545; color: white; }
 button:active:not(:disabled) {
   transform: translateY(1px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-button:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-button:focus:not(:focus-visible) {
-  outline: none;
-}
-
-button:focus {
-  /* fallback for browsers without :focus-visible */
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* Specific button IDs */
-#joinBtn {
-  background: var(--success);
-  color: var(--text-light);
-}
-
-#shareBtn {
-  background: var(--primary);
-  color: var(--text-light);
-}
-
-#stopBtn {
-  background: var(--danger);
-  color: var(--text-light);
-}
-
-/* .btn-ok and .btn-no styles */
-.btn-ok {
-  background: var(--success);
-  color: var(--text-light);
-  flex: 1;
-}
-.btn-ok:hover,
-.btn-ok:focus-visible {
-  background: #218838; /* darker green */
-  box-shadow: 0 0 8px var(--success);
-}
-
-.btn-no {
-  background: var(--danger);
-  color: var(--text-light);
-  flex: 1;
-}
-.btn-no:hover,
-.btn-no:focus-visible {
-  background: #c82333; /* darker red */
-  box-shadow: 0 0 8px var(--danger);
-}
-
-/* --- Status --- */
 #status {
   margin-left: auto;
-  color: var(--text-muted);
+  color: #ccc;
   font-size: 14px;
   font-weight: 500;
 }
@@ -205,47 +118,14 @@ button:focus {
   display: block;
   animation: fadeIn 0.3s ease;
 }
-#remoteWrapper{
-  position: relative;
-}
 
-/* --- Remote Cursor --- */
-#remoteCursor {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  background: red;
-  border-radius: 50%;
-  pointer-events: none;
-  display: none;
-  z-index: 9999;
-  transition: background 0.3s ease;
-}
-#remoteWrapper:-webkit-full-screen video,
-#remoteWrapper:fullscreen video {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* or cover as per preference */
-}
-
-#remoteWrapper:-webkit-full-screen #remoteCursor,
-#remoteWrapper:fullscreen #remoteCursor {
-  z-index: 10000; /* ensure above video */
-}
-
-#local{
-  position: relative;
-  z-index: 1;
-}
-#remoteCursor.clicked {
-  background: blue;
-}
-
-/* --- Animations --- */
 @keyframes fadeIn {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+.btn-ok { background: #28a745; color: #fff; flex: 1; }
+.btn-no { background: #dc3545; color: #fff; flex: 1; }
 
 /* --- Videos --- */
 .videos {
@@ -253,25 +133,23 @@ button:focus {
   flex-direction: column;
   width: 100%;
   height: 60vh;
-  background: black;
+  background: #000;
   border-radius: 12px;
   overflow: hidden;
 }
 
 .remote-wrapper {
-  margin: auto;
-  overflow: hidden;
   position: relative;
   width: 100%;
   height: 100%;
-  background: black;
 }
 
 #remote {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* or use 'cover' if you prefer */
+  object-fit: cover;
   background: black;
+  display: block;
 }
 
 #local {
@@ -285,15 +163,18 @@ button:focus {
   right: 10px;
   z-index: 10;
   background: rgba(0,0,0,0.6);
-  color: var(--text-light);
+  color: white;
   border: none;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
   font-size: 1.2em;
 }
+button:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
-/* --- Hide video controls (WebKit) --- */
 video::-webkit-media-controls {
   display: none !important;
 }
@@ -301,16 +182,7 @@ video::-webkit-media-controls {
 video::-webkit-media-controls-enclosure {
   display: none !important;
 }
-.panel {
-  animation: fadeIn 0.5s ease-in-out;
-}
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* --- Media Queries --- */
 @media (max-height: 500px) {
   .videos {
     height: 80vh;
@@ -324,21 +196,5 @@ video::-webkit-media-controls-enclosure {
   }
   .videos {
     height: 40vh;
-  }
-  #fullscreenBtn {
-    padding: 12px 16px;
-    font-size: 1.5em;
-  }
-}
-
-@media (max-width: 400px) {
-  .row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  label {
-    min-width: auto;
-    margin-bottom: 4px;
   }
 }

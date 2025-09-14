@@ -8,19 +8,18 @@
 </head>
 <body>
   <header><h1 role="heading" aria-level="1">Screen Share</h1></header>
-  
-  <main class="panel">
+
   <div class="panel">
     <div class="row">
       <label for="name">Name:</label>
-      <input id="name" placeholder="Enter your name" name="name" />
+      <input id="name" placeholder="Enter your name" />
     </div>
 
     <div class="row">
       <label for="room">Room:</label>
-      <input id="room" value="room1" name="room"/>
+      <input id="room" value="room1" />
       <button id="joinBtn" type="button" >Join</button>
-      <button id="shareBtn" type="button" disabled aria-disabled="true">Request Access</button>
+      <button id="shareBtn"type="button"  disabled>Request Access</button>
       <button id="stopBtn" type="button" disabled>Stop</button>
       <span id="status"></span>
     </div>
@@ -35,14 +34,13 @@
 
     <div class="videos">
       <video id="local" autoplay muted playsinline title="Your screen preview" aria-label="Your screen preview"></video>
-      <div id="remoteCursor"></div>
-      <div class="remote-wrapper" id="remoteWrapper">
+      <div class="remote-wrapper">
         <video id="remote" autoplay playsinline title="Remote screen" aria-label="Remote screen preview"></video>
         <button id="fullscreenBtn" type="button" aria-label="Enter full screen">⛶</button>
       </div>
     </div>
   </div>
-</main>
+
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="script.js"></script>
 </body>
