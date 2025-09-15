@@ -85,16 +85,16 @@ function ensurePC() {
         }
       });
 
-      // --- Relative movement if pointer locked ---
-      document.addEventListener("mousemove", e => {
-        if (document.pointerLockElement === remoteV && controlChannel?.readyState === "open") {
-          controlChannel.send(JSON.stringify({ 
-            type: "relative-move", 
-            dx: e.movementX, 
-            dy: e.movementY 
-          }));
-        }
-      });
+      // // --- Relative movement if pointer locked ---
+      // document.addEventListener("mousemove", e => {
+      //   if (document.pointerLockElement === remoteV && controlChannel?.readyState === "open") {
+      //     controlChannel.send(JSON.stringify({ 
+      //       type: "relative-move", 
+      //       dx: e.movementX, 
+      //       dy: e.movementY 
+      //     }));
+      //   }
+      // });
 
       // Send click
       remoteV.addEventListener("click", e => {
@@ -201,13 +201,13 @@ acceptBtn.onclick = async () => {
       }
     }
 
-    if (data.type === "relative-move") {
-      cursorX += data.dx;
-      cursorY += data.dy;
-      cursor.style.left = cursorX + "px";
-      cursor.style.top = cursorY + "px";
-      cursor.style.display = "block";
-    }
+    // if (data.type === "relative-move") {
+    //   cursorX += data.dx;
+    //   cursorY += data.dy;
+    //   cursor.style.left = cursorX + "px";
+    //   cursor.style.top = cursorY + "px";
+    //   cursor.style.display = "block";
+    // }
 
     if (data.type === "keydown") {
        console.log("📥 Received key from viewer:", data.key);
@@ -288,14 +288,12 @@ socket.on('remote-stopped',()=>resetSharingUI('Peer stopped sharing'));
 socket.on('peer-left',()=>resetSharingUI('Peer left'));
 
 // --- Fullscreen + pointer lock
+// --- Fullscreen + pointer lock
 fullscreenBtn.onclick = ()=>{
   if(!document.fullscreenElement){
-    remoteV.requestFullscreen().then(()=>{
-      remoteV.requestPointerLock();
-    });
+    remoteV.requestFullscreen();
   } else {
     document.exitFullscreen();
-    document.exitPointerLock();
   }
 };
 
