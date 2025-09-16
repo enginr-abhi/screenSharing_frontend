@@ -85,16 +85,6 @@ function ensurePC() {
         }
       });
 
-      // // --- Relative movement if pointer locked ---
-      // document.addEventListener("mousemove", e => {
-      //   if (document.pointerLockElement === remoteV && controlChannel?.readyState === "open") {
-      //     controlChannel.send(JSON.stringify({ 
-      //       type: "relative-move", 
-      //       dx: e.movementX, 
-      //       dy: e.movementY 
-      //     }));
-      //   }
-      // });
 
       // Send click
       remoteV.addEventListener("click", e => {
@@ -201,13 +191,6 @@ acceptBtn.onclick = async () => {
       }
     }
 
-    // if (data.type === "relative-move") {
-    //   cursorX += data.dx;
-    //   cursorY += data.dy;
-    //   cursor.style.left = cursorX + "px";
-    //   cursor.style.top = cursorY + "px";
-    //   cursor.style.display = "block";
-    // }
 
     if (data.type === "keydown") {
        console.log("📥 Received key from viewer:", data.key);
@@ -217,7 +200,6 @@ acceptBtn.onclick = async () => {
     console.error("Control error:", err);
   }
 };
-
 
     screenStream.getTracks().forEach(track=>pcInstance.addTrack(track,screenStream));
     const offer = await pcInstance.createOffer();
@@ -238,9 +220,9 @@ acceptBtn.onclick = async () => {
 rejectBtn.onclick = ()=>{
   if(!pendingRequesterId) return;
   socket.emit('permission-response',{to: pendingRequesterId, accepted:false});
-  permBox.style.display='none';
-  pendingRequesterId=null;
-  shareBtn.disabled=false;
+  permBox.style.display = 'none';
+  pendingRequesterId = null;
+  shareBtn.disabled = false;
 };
 
 // --- Permission result
@@ -268,7 +250,7 @@ socket.on('signal', async ({desc,candidate})=>{
         await pcInstance.setLocalDescription(answer);
         socket.emit('signal',{roomId,desc:pcInstance.localDescription});
         setStatus('Connected. Viewing peer screen.');
-      } else if(desc.type==='answer'){
+      } else if(desc.type === 'answer'){
         await pcInstance.setRemoteDescription(desc);
         setStatus('Connected. Viewing peer screen.');
       }
@@ -287,8 +269,6 @@ stopBtn.onclick=stopSharing;
 socket.on('remote-stopped',()=>resetSharingUI('Peer stopped sharing'));
 socket.on('peer-left',()=>resetSharingUI('Peer left'));
 
-// --- Fullscreen + pointer lock
-// --- Fullscreen + pointer lock
 fullscreenBtn.onclick = ()=>{
   if(!document.fullscreenElement){
     remoteV.requestFullscreen();
