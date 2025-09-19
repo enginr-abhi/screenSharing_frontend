@@ -1,4 +1,7 @@
-const socket = io("https://screensharing-test-backend.onrender.com", { transports: ["websocket"] });
+// * script.js */
+const socket = io("https://screensharing-test-backend.onrender.com",{
+  transports:["websocket"]
+});
 
 const nameInput = document.getElementById("name");
 const roomInput = document.getElementById("room");
@@ -13,12 +16,18 @@ const localVideo = document.getElementById("local");
 const remoteVideo = document.getElementById("remote");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 
-// ✅ Extra references for labels
-const nameLabel = document.querySelector("label[for='name']");
-const roomLabel = document.querySelector("label[for='room']");
-
 let pc, localStream, remoteStream;
 let roomId;
+
+
+function hideInputs() {
+  nameInput.style.display = "none";
+  roomInput.style.display = "none";
+  document.querySelector('label[for="name"]').style.display = 'none';
+  document.querySelector('label[for="room"]').style.display = 'none';
+  joinBtn.style.display = 'none';
+  shareBtn.disabled = false;
+}
 
 // ---- Join ----
 joinBtn.onclick = () => {
@@ -27,18 +36,9 @@ joinBtn.onclick = () => {
   if (!name || !roomId) return alert("Enter name and room");
 
   socket.emit("set-name", { name });
-  socket.emit("join-room", { roomId });
-
-  // 🔥 Hide labels + inputs once joined
-  nameInput.style.display = "none";
-  roomInput.style.display = "none";
-  nameLabel.style.display = "none";
-  roomLabel.style.display = "none";
-
-  joinBtn.style.display = "none";
-  shareBtn.disabled = false;
-
-  statusEl.textContent = "✅ Joined";
+  socket.emit("join-room", { roomId , name, isAgent: false});
+  hideInputs();
+  statusEl.textContent = `✅ ${name} Joined ${roomId}`;
 };
 
 // ---- Request screen ----
@@ -64,6 +64,11 @@ socket.on("screen-request", ({ from, name }) => {
 
   acceptBtn.onclick = async () => {
     permBox.style.display = "none";
+      // 🔹 Show Agent download popup
+  if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
+      // ✅ agent.exe download start hoga
+    window.open("https://screensharing-test-backend.onrender.com/downlaod-agent", "_blank");
+  }
     try {
       localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       localVideo.srcObject = localStream;
@@ -83,7 +88,6 @@ socket.on("screen-request", ({ from, name }) => {
       socket.emit("permission-response", { to: from, accepted: true });
       stopBtn.disabled = false;
       shareBtn.disabled = true;
-
     } catch (err) {
       console.error(err);
       socket.emit("permission-response", { to: from, accepted: false });
@@ -134,20 +138,7 @@ function startPeer(isOfferer) {
   pc = new RTCPeerConnection();
   pc.onicecandidate = e => { if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate }); };
   pc.ontrack = e => {
-    if (!remoteStream) {
-      remoteStream = new MediaStream();
-      remoteVideo.srcObject = remoteStream;
-
-      // 🔥 Send capture-info when video is ready
-      remoteVideo.onloadedmetadata = () => {
-        socket.emit("capture-info", {
-          roomId,
-          captureWidth: remoteVideo.videoWidth,
-          captureHeight: remoteVideo.videoHeight,
-          devicePixelRatio: window.devicePixelRatio || 1,
-        });
-      };
-    }
+    if (!remoteStream) { remoteStream = new MediaStream(); remoteVideo.srcObject = remoteStream; }
     remoteStream.addTrack(e.track);
   };
   if (isOfferer) {
@@ -162,45 +153,22 @@ function startPeer(isOfferer) {
 
 // ---- Remote Control ----
 function enableRemoteControl() {
-  // ✅ Transparent overlay div
-  let overlay = document.getElementById("controlLayer");
-  if (!overlay) {
-    overlay = document.createElement("div");
-    overlay.id = "controlLayer";
-    Object.assign(overlay.style, {
-      position: "absolute",
-      top: "0", left: "0", width: "100%", height: "100%",
-      cursor: "crosshair", background: "transparent"
-    });
-    remoteVideo.parentElement.appendChild(overlay);
-  }
-
-  overlay.addEventListener("mousemove", e => {
-    const x = e.offsetX / overlay.clientWidth;
-    const y = e.offsetY / overlay.clientHeight;
+  remoteVideo.addEventListener("mousemove", e => {
+    const rect = remoteVideo.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;
+    const y = (e.clientY - rect.top) / rect.height;
     socket.emit("control", { type: "mousemove", x, y });
   });
 
   ["click", "dblclick", "mousedown", "mouseup"].forEach(evt => {
-    overlay.addEventListener(evt, e => {
-      socket.emit("control", { type: evt, button: e.button });
-    });
+    remoteVideo.addEventListener(evt, e => { socket.emit("control", { type: evt, button: e.button }); });
   });
 
-  overlay.addEventListener("wheel", e => {
-    socket.emit("control", { type: "wheel", deltaY: Math.sign(e.deltaY) });
-  });
+  remoteVideo.addEventListener("wheel", e => { socket.emit("control", { type: "wheel", deltaY: e.deltaY }); });
 
-  document.addEventListener("keydown", e => {
-    socket.emit("control", { type: "keydown", key: e.key.toLowerCase() });
-  });
-
-  document.addEventListener("keyup", e => {
-    socket.emit("control", { type: "keyup", key: e.key.toLowerCase() });
-  });
+  document.addEventListener("keydown", e => { socket.emit("control", { type: "keydown", key: e.key }); });
+  document.addEventListener("keyup", e => { socket.emit("control", { type: "keyup", key: e.key }); });
 }
 
 // ---- Fullscreen ----
-fullscreenBtn.onclick = () => {
-  if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
-};
+fullscreenBtn.onclick = () => { if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen(); };

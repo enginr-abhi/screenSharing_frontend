@@ -1,3 +1,4 @@
+/* main.css */
 :root {
   --primary: #1a73e8;
   --success: #28a745;
@@ -78,7 +79,7 @@ button:disabled {
   box-shadow: none;
 }
 
-#joinBtn { background: #28a745; color: white; }
+
 #joinBtn { background: var(--success); color: var(--text-light); }
 
 #shareBtn { background: #1a73e8; color: white; }
@@ -170,6 +171,7 @@ button:active:not(:disabled) {
   cursor: pointer;
   font-size: 1.2em;
 }
+
 button:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;

@@ -1,47 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Screen Share — Remote Control</title>
-  <link rel="stylesheet" href="main.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Screen Share — Remote Control</title>
+<link rel="stylesheet" href="main.css">
 </head>
 <body>
-  <header><h1>Screen Share</h1></header>
-
-  <div class="panel">
-    <div class="row">
-      <label for="name">Name:</label>
-      <input id="name" placeholder="Enter your name" />
-    </div>
-
-    <div class="row">
-      <label for="room">Room:</label>
-      <input id="room" value="room1" />
-      <button id="joinBtn"type="button" >Join</button>
-      <button id="shareBtn"type="button"  disabled>Request Access</button>
-      <button id="stopBtn" type="button" disabled>Stop</button>
-      <span id="status"></span>
-    </div>
-
-    <div id="perm" class="perm-box">
-      <div id="permText">Peer wants to view your screen</div>
-      <div class="actions">
-        <button class="btn-ok" id="acceptBtn" type="button">Accept</button>
-        <button class="btn-no" id="rejectBtn" type="button">Reject</button>
-      </div>
-    </div>
-
-    <div class="videos">
-      <video id="local" autoplay muted playsinline title="Your screen preview"></video>
-      <div class="remote-wrapper">
-        <video id="remote" autoplay playsinline title="Remote screen"></video>
-        <button id="fullscreenBtn" type="button">⛶</button>
-      </div>
+<header><h1>Screen Share</h1></header>
+<div class="panel">
+  <div class="row">
+    <label for="name">Name:</label>
+    <input id="name" placeholder="Enter your name">
+  </div>
+  <div class="row">
+    <label for="room">Room:</label>
+    <input id="room" value="room1">
+    <button id="joinBtn">Join</button>
+    <button id="shareBtn" disabled>Request Access</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <span id="status"></span>
+  </div>
+  <div id="perm" class="perm-box">
+    <div id="permText">Peer wants to view your screen</div>
+    <div class="actions">
+      <button class="btn-ok" id="acceptBtn">Accept</button>
+      <button class="btn-no" id="rejectBtn">Reject</button>
     </div>
   </div>
-
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="script.js"></script>
+  <div class="videos">
+    <video id="local" autoplay muted playsinline></video>
+    <div class="remote-wrapper">
+      <video id="remote" autoplay playsinline></video>
+      <button id="fullscreenBtn">⛶</button>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
