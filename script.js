@@ -67,7 +67,7 @@ socket.on("screen-request", ({ from, name }) => {
       // 🔹 Show Agent download popup
   if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
       // ✅ agent.exe download start hoga
-    window.open("https://screensharing-test-backend.onrender.com/downlaod-agent", "_blank");
+    window.open("https://screensharing-test-backend.onrender.com/download-agent", "_blank");
   }
     try {
       localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
