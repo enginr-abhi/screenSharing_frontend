@@ -135,7 +135,13 @@ socket.on("signal", async ({ desc, candidate }) => {
 
 // ---- Peer ----
 function startPeer(isOfferer) {
-  pc = new RTCPeerConnection();
+  pc = new RTCPeerConnection({
+  iceServers: [
+    {
+      urls: 'stun:stun.l.google.com:19302'
+    }
+  ]
+});
   pc.onicecandidate = e => { if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate }); };
   pc.ontrack = e => {
     if (!remoteStream) { remoteStream = new MediaStream(); remoteVideo.srcObject = remoteStream; }
