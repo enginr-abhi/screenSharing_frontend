@@ -18,7 +18,7 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 let pc, localStream, remoteStream;
 let roomId;
-let canFullscreen = false; // 🔹 Flag for gesture-based fullscreen
+let canFullscreen = false; // 🔹 gesture flag
 
 function hideInputs() {
   nameInput.style.display = "none";
@@ -45,15 +45,13 @@ joinBtn.onclick = () => {
 shareBtn.onclick = () => {
   socket.emit("request-screen", { roomId, from: socket.id });
   statusEl.textContent = "⏳ Requesting screen...";
-
-  // 🔹 Mark that fullscreen is allowed (user gesture)
-  canFullscreen = true;
+  canFullscreen = true; // 🔹 mark that fullscreen can be triggered later
 };
 
 // ---- Stop ----
 stopBtn.onclick = () => {
-  const name = nameInput.value.trim(); // get your name
-  socket.emit("stop-share", { roomId, name }); // send name to server
+  const name = nameInput.value.trim();
+  socket.emit("stop-share", { roomId, name });
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
   statusEl.textContent = "🛑 Stopped";
@@ -69,7 +67,6 @@ socket.on("screen-request", ({ from, name }) => {
   acceptBtn.onclick = async () => {
     permBox.style.display = "none";
 
-    // Show Agent download popup
     if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
       window.open("https://screensharing-test-backend.onrender.com/download-agent", "_blank");
     }
@@ -114,7 +111,6 @@ socket.on("permission-result", accepted => {
   statusEl.textContent = "✅ Request accepted";
   startPeer(false);
 
-  // enable stop button for viewer too
   stopBtn.disabled = false;
   shareBtn.disabled = true;
 });
@@ -161,12 +157,13 @@ function startPeer(isOfferer) {
     }
     remoteStream.addTrack(e.track);
 
-    // 🔹 Auto fullscreen when remote video metadata loads
     remoteVideo.onloadedmetadata = () => {
       if (canFullscreen && remoteVideo.requestFullscreen) {
-        remoteVideo.requestFullscreen()
-          .catch(err => console.warn("⚠️ Fullscreen failed:", err));
-        canFullscreen = false; // reset after first use
+        setTimeout(() => {
+          remoteVideo.requestFullscreen()
+            .catch(err => console.warn("⚠️ Fullscreen failed:", err));
+        }, 0);
+        canFullscreen = false; // reset flag
       }
     };
   };
