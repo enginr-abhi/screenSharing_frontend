@@ -108,6 +108,11 @@ socket.on("permission-result", accepted => {
   }
   statusEl.textContent = "✅ Request accepted";
   startPeer(false);
+
+  
+  // 🔹 enable stop button for viewer too
+  stopBtn.disabled = false;
+  shareBtn.disabled = true;
 });
 
 // ---- Stop-share ----
