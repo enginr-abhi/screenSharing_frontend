@@ -49,7 +49,8 @@ shareBtn.onclick = () => {
 
 // ---- Stop ----
 stopBtn.onclick = () => {
-  socket.emit("stop-share", roomId);
+  const name = nameInput.value.trim(); // get your name
+  socket.emit("stop-share", { roomId, name }); // send name to server
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
   statusEl.textContent = "🛑 Stopped";
@@ -116,10 +117,10 @@ socket.on("permission-result", accepted => {
 });
 
 // ---- Stop-share ----
-socket.on("stop-share", () => {
+socket.on("stop-share", ({name}) => {
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
-  statusEl.textContent = "🛑 Sharing stopped";
+  statusEl.textContent = `🛑 ${name} stopped sharing`;
   stopBtn.disabled = true;
   shareBtn.disabled = false;
 });
