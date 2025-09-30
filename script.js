@@ -18,6 +18,7 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 let pc, localStream, remoteStream;
 let roomId;
+let canFullscreen = false; // 🔹 Flag for gesture-based fullscreen
 
 function hideInputs() {
   nameInput.style.display = "none";
@@ -44,12 +45,15 @@ joinBtn.onclick = () => {
 shareBtn.onclick = () => {
   socket.emit("request-screen", { roomId, from: socket.id });
   statusEl.textContent = "⏳ Requesting screen...";
+
+  // 🔹 Mark that fullscreen is allowed (user gesture)
+  canFullscreen = true;
 };
 
 // ---- Stop ----
 stopBtn.onclick = () => {
-  const name = nameInput.value.trim();
-  socket.emit("stop-share", { roomId, name });
+  const name = nameInput.value.trim(); // get your name
+  socket.emit("stop-share", { roomId, name }); // send name to server
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
   statusEl.textContent = "🛑 Stopped";
@@ -113,9 +117,6 @@ socket.on("permission-result", accepted => {
   // enable stop button for viewer too
   stopBtn.disabled = false;
   shareBtn.disabled = true;
-
-  // 🔹 Trigger fullscreen via user gesture hack
-  triggerFullscreen(remoteVideo);
 });
 
 // ---- Stop-share ----
@@ -149,11 +150,25 @@ function startPeer(isOfferer) {
     ]
   });
 
-  pc.onicecandidate = e => { if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate }); };
+  pc.onicecandidate = e => {
+    if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate });
+  };
 
   pc.ontrack = e => {
-    if (!remoteStream) { remoteStream = new MediaStream(); remoteVideo.srcObject = remoteStream; }
+    if (!remoteStream) {
+      remoteStream = new MediaStream();
+      remoteVideo.srcObject = remoteStream;
+    }
     remoteStream.addTrack(e.track);
+
+    // 🔹 Auto fullscreen when remote video metadata loads
+    remoteVideo.onloadedmetadata = () => {
+      if (canFullscreen && remoteVideo.requestFullscreen) {
+        remoteVideo.requestFullscreen()
+          .catch(err => console.warn("⚠️ Fullscreen failed:", err));
+        canFullscreen = false; // reset after first use
+      }
+    };
   };
 
   if (isOfferer) {
@@ -163,7 +178,6 @@ function startPeer(isOfferer) {
       socket.emit("signal", { roomId, desc: pc.localDescription });
     };
   }
-
   enableRemoteControl();
 }
 
@@ -177,33 +191,24 @@ function enableRemoteControl() {
   });
 
   ["click", "dblclick", "mousedown", "mouseup"].forEach(evt => {
-    remoteVideo.addEventListener(evt, e => { socket.emit("control", { type: evt, button: e.button }); });
+    remoteVideo.addEventListener(evt, e => {
+      socket.emit("control", { type: evt, button: e.button });
+    });
   });
 
-  remoteVideo.addEventListener("wheel", e => { socket.emit("control", { type: "wheel", deltaY: e.deltaY }); });
+  remoteVideo.addEventListener("wheel", e => {
+    socket.emit("control", { type: "wheel", deltaY: e.deltaY });
+  });
 
-  document.addEventListener("keydown", e => { socket.emit("control", { type: "keydown", key: e.key }); });
-  document.addEventListener("keyup", e => { socket.emit("control", { type: "keyup", key: e.key }); });
+  document.addEventListener("keydown", e => {
+    socket.emit("control", { type: "keydown", key: e.key });
+  });
+  document.addEventListener("keyup", e => {
+    socket.emit("control", { type: "keyup", key: e.key });
+  });
 }
 
 // ---- Fullscreen Button ----
 fullscreenBtn.onclick = () => {
   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
 };
-
-// ---- Fullscreen helper (gesture-based) ----
-function triggerFullscreen(videoEl) {
-  const btn = document.createElement('button');
-  btn.style.position = 'absolute';
-  btn.style.opacity = '0';
-  btn.style.pointerEvents = 'none';
-  document.body.appendChild(btn);
-
-  btn.addEventListener('click', () => {
-    if (videoEl.requestFullscreen) videoEl.requestFullscreen().catch(err => console.warn(err));
-    document.body.removeChild(btn);
-  });
-
-  // Programmatically click the button to satisfy user gesture requirement
-  btn.click();
-}
