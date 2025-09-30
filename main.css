@@ -172,6 +172,25 @@ button:active:not(:disabled) {
   font-size: 1.2em;
 }
 
+/* Fullscreen adjustments */
+:fullscreen #remote,
+:-webkit-full-screen #remote,
+:-moz-full-screen #remote,
+:-ms-fullscreen #remote {
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important;
+}
+
+:fullscreen .remote-wrapper,
+:-webkit-full-screen .remote-wrapper,
+:-moz-full-screen .remote-wrapper,
+:-ms-fullscreen .remote-wrapper {
+  width: 100vw !important;
+  height: 100vh !important;
+}
+
+
 button:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;

@@ -1,6 +1,6 @@
 // * script.js *
-const socket = io("https://screensharing-test-backend.onrender.com",{
-  transports:["websocket"]
+const socket = io("https://screensharing-test-backend.onrender.com", {
+  transports: ["websocket"]
 });
 
 const nameInput = document.getElementById("name");
@@ -35,7 +35,7 @@ joinBtn.onclick = () => {
   if (!name || !roomId) return alert("Enter name and room");
 
   socket.emit("set-name", { name });
-  socket.emit("join-room", { roomId , name, isAgent: false});
+  socket.emit("join-room", { roomId, name, isAgent: false });
   hideInputs();
   statusEl.textContent = `✅ ${name} Joined ${roomId}`;
 };
@@ -48,8 +48,8 @@ shareBtn.onclick = () => {
 
 // ---- Stop ----
 stopBtn.onclick = () => {
-  const name = nameInput.value.trim(); // get your name
-  socket.emit("stop-share", { roomId, name }); // send name to server
+  const name = nameInput.value.trim();
+  socket.emit("stop-share", { roomId, name });
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
   statusEl.textContent = "🛑 Stopped";
@@ -113,10 +113,13 @@ socket.on("permission-result", accepted => {
   // enable stop button for viewer too
   stopBtn.disabled = false;
   shareBtn.disabled = true;
+
+  // 🔹 Trigger fullscreen via user gesture hack
+  triggerFullscreen(remoteVideo);
 });
 
 // ---- Stop-share ----
-socket.on("stop-share", ({name}) => {
+socket.on("stop-share", ({ name }) => {
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
   statusEl.textContent = `🛑 ${name} stopped sharing`;
@@ -151,13 +154,6 @@ function startPeer(isOfferer) {
   pc.ontrack = e => {
     if (!remoteStream) { remoteStream = new MediaStream(); remoteVideo.srcObject = remoteStream; }
     remoteStream.addTrack(e.track);
-
-    // 🔹 Auto fullscreen when remote video metadata loads
-    remoteVideo.onloadedmetadata = () => {
-      if (remoteVideo.requestFullscreen) {
-        remoteVideo.requestFullscreen().catch(err => console.warn("⚠️ Fullscreen failed:", err));
-      }
-    };
   };
 
   if (isOfferer) {
@@ -167,6 +163,7 @@ function startPeer(isOfferer) {
       socket.emit("signal", { roomId, desc: pc.localDescription });
     };
   }
+
   enableRemoteControl();
 }
 
@@ -193,3 +190,20 @@ function enableRemoteControl() {
 fullscreenBtn.onclick = () => {
   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
 };
+
+// ---- Fullscreen helper (gesture-based) ----
+function triggerFullscreen(videoEl) {
+  const btn = document.createElement('button');
+  btn.style.position = 'absolute';
+  btn.style.opacity = '0';
+  btn.style.pointerEvents = 'none';
+  document.body.appendChild(btn);
+
+  btn.addEventListener('click', () => {
+    if (videoEl.requestFullscreen) videoEl.requestFullscreen().catch(err => console.warn(err));
+    document.body.removeChild(btn);
+  });
+
+  // Programmatically click the button to satisfy user gesture requirement
+  btn.click();
+}
