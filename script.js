@@ -156,13 +156,14 @@ function startPeer(isOfferer) {
       remoteVideo.srcObject = remoteStream;
     }
     remoteStream.addTrack(e.track);
-
+    // New code to REVERT TO:
     remoteVideo.onloadedmetadata = () => {
-      if (canFullscreen && remoteVideo.requestFullscreen) {
-        setTimeout(() => {
-          remoteVideo.requestFullscreen()
-            .catch(err => console.warn("⚠️ Fullscreen failed:", err));
-        }, 0);
+      // Get the wrapper element for better fullscreen experience
+      const remoteWrapper = document.querySelector(".remote-wrapper"); 
+      
+      if (canFullscreen && remoteWrapper.requestFullscreen) {
+        remoteWrapper.requestFullscreen()
+          .catch(err => console.warn("⚠️ Auto-fullscreen failed (browser policy):", err));
         canFullscreen = false; // reset flag
       }
     };
@@ -205,7 +206,13 @@ function enableRemoteControl() {
   });
 }
 
+// // ---- Fullscreen Button ----
+// fullscreenBtn.onclick = () => {
+//   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
+// };
+
 // ---- Fullscreen Button ----
 fullscreenBtn.onclick = () => {
-  if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
+  const remoteWrapper = document.querySelector(".remote-wrapper");
+  if (remoteWrapper.requestFullscreen) remoteWrapper.requestFullscreen();
 };
