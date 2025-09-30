@@ -148,7 +148,7 @@ button:active:not(:disabled) {
 #remote {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   background: black;
   display: block;
 }
@@ -173,22 +173,22 @@ button:active:not(:disabled) {
 }
 
 /* Fullscreen adjustments */
-:fullscreen #remote,
+/* :fullscreen #remote,
 :-webkit-full-screen #remote,
 :-moz-full-screen #remote,
 :-ms-fullscreen #remote {
   width: 100vw !important;
   height: 100vh !important;
   object-fit: cover !important;
-}
+} */
 
-:fullscreen .remote-wrapper,
+/* :fullscreen .remote-wrapper,
 :-webkit-full-screen .remote-wrapper,
 :-moz-full-screen .remote-wrapper,
 :-ms-fullscreen .remote-wrapper {
   width: 100vw !important;
   height: 100vh !important;
-}
+} */
 
 
 button:focus {
