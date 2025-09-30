@@ -152,6 +152,15 @@ function startPeer(isOfferer) {
   pc.ontrack = e => {
     if (!remoteStream) { remoteStream = new MediaStream(); remoteVideo.srcObject = remoteStream; }
     remoteStream.addTrack(e.track);
+    //🔹 Auto fullscreen
+    remoteVideo.onloadedmetadata = () =>{
+   if(remoteVideo.requestFullscreen){
+    remoteVideo.requestFullscreen().catch(err =>{
+      console.warn("⚠️ Fullscreen failed:", err);
+    })
+   }
+    }
+
   };
   if (isOfferer) {
     pc.onnegotiationneeded = async () => {
