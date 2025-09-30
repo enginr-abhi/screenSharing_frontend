@@ -1,4 +1,4 @@
-// * script.js */
+// * script.js *
 const socket = io("https://screensharing-test-backend.onrender.com",{
   transports:["websocket"]
 });
@@ -18,7 +18,6 @@ const fullscreenBtn = document.getElementById("fullscreenBtn");
 
 let pc, localStream, remoteStream;
 let roomId;
-
 
 function hideInputs() {
   nameInput.style.display = "none";
@@ -65,11 +64,12 @@ socket.on("screen-request", ({ from, name }) => {
 
   acceptBtn.onclick = async () => {
     permBox.style.display = "none";
-      // 🔹 Show Agent download popup
-  if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
-      // ✅ agent.exe download start hoga
-    window.open("https://screensharing-test-backend.onrender.com/download-agent", "_blank");
-  }
+
+    // Show Agent download popup
+    if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
+      window.open("https://screensharing-test-backend.onrender.com/download-agent", "_blank");
+    }
+
     try {
       localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
       localVideo.srcObject = localStream;
@@ -110,8 +110,7 @@ socket.on("permission-result", accepted => {
   statusEl.textContent = "✅ Request accepted";
   startPeer(false);
 
-  
-  // 🔹 enable stop button for viewer too
+  // enable stop button for viewer too
   stopBtn.disabled = false;
   shareBtn.disabled = true;
 });
@@ -142,26 +141,25 @@ socket.on("signal", async ({ desc, candidate }) => {
 // ---- Peer ----
 function startPeer(isOfferer) {
   pc = new RTCPeerConnection({
-  iceServers: [
-    {
-      urls: 'stun:stun.l.google.com:19302'
-    }
-  ]
-});
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' }
+    ]
+  });
+
   pc.onicecandidate = e => { if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate }); };
+
   pc.ontrack = e => {
     if (!remoteStream) { remoteStream = new MediaStream(); remoteVideo.srcObject = remoteStream; }
     remoteStream.addTrack(e.track);
-    //🔹 Auto fullscreen
-    remoteVideo.onloadedmetadata = () =>{
-   if(remoteVideo.requestFullscreen){
-    remoteVideo.requestFullscreen().catch(err =>{
-      console.warn("⚠️ Fullscreen failed:", err);
-    })
-   }
-    }
 
+    // 🔹 Auto fullscreen when remote video metadata loads
+    remoteVideo.onloadedmetadata = () => {
+      if (remoteVideo.requestFullscreen) {
+        remoteVideo.requestFullscreen().catch(err => console.warn("⚠️ Fullscreen failed:", err));
+      }
+    };
   };
+
   if (isOfferer) {
     pc.onnegotiationneeded = async () => {
       const offer = await pc.createOffer();
@@ -191,5 +189,7 @@ function enableRemoteControl() {
   document.addEventListener("keyup", e => { socket.emit("control", { type: "keyup", key: e.key }); });
 }
 
-// ---- Fullscreen ----
-fullscreenBtn.onclick = () => { if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen(); };
+// ---- Fullscreen Button ----
+fullscreenBtn.onclick = () => {
+  if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
+};
