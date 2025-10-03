@@ -1,3 +1,4 @@
+/* main.css */
 :root {
   --primary: #1a73e8;
   --success: #28a745;
@@ -142,23 +143,8 @@ button:active:not(:disabled) {
   position: relative;
   width: 100%;
   height: 100%;
-  /* Ensures the aspect ratio is maintained by JS, but if not, 
-     it fills the container. */
 }
 
-/* ---------------------------------------------------- */
-/* --- NEW STYLES FOR CANVAS ELEMENT --- */
-/* ---------------------------------------------------- */
-#remoteCanvas {
-  width: 100%;
-  height: 100%;
-  /* Object-fit equivalent for canvas, ensures it scales within the container */
-  display: block;
-  background: black;
-}
-
-/* CLEANUP: Remove video-specific styles, including the fullscreen target */
-/*
 #remote {
   width: 100%;
   height: 100%;
@@ -166,7 +152,6 @@ button:active:not(:disabled) {
   background: black;
   display: block;
 }
-*/
 
 #local {
   display: none;
@@ -187,14 +172,14 @@ button:active:not(:disabled) {
   font-size: 1.2em;
 }
 
-/* Fullscreen adjustments - UPDATED TARGET to remoteCanvas */
-:fullscreen #remoteCanvas,
-:-webkit-full-screen #remoteCanvas,
-:-moz-full-screen #remoteCanvas,
-:-ms-fullscreen #remoteCanvas {
-  /* Set CSS dimensions to match viewport when fullscreen */
+/* Fullscreen adjustments */
+:fullscreen #remote,
+:-webkit-full-screen #remote,
+:-moz-full-screen #remote,
+:-ms-fullscreen #remote {
   width: 100vw !important;
   height: 100vh !important;
+  object-fit: cover !important;
 }
 
 :fullscreen .remote-wrapper,
@@ -211,7 +196,13 @@ button:focus {
   outline-offset: 2px;
 }
 
-/* Removed media controls styling as we are not using <video> anymore */
+video::-webkit-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
 
 @media (max-height: 500px) {
   .videos {
