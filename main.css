@@ -43,7 +43,7 @@ body {
   margin: 0 auto;
   gap: 16px;
   padding: 16px;
-  align-items: stretch; /* ✅ ensures both children are equal height */
+  align-items: stretch;
 }
 
 /* --- Panel --- */
@@ -56,7 +56,7 @@ body {
   gap: 12px;
   border-radius: 12px;
   box-shadow: 0 8px 20px rgba(0,0,0,0.5);
-  height: 100%; /* ✅ match sidebar height */
+  height: 100%;
 }
 
 /* --- Rows --- */
@@ -80,6 +80,7 @@ input {
   font-size: 14px;
 }
 
+/* --- Buttons --- */
 button {
   padding: 10px 16px;
   border-radius: 8px;
@@ -102,8 +103,17 @@ button:disabled {
 }
 
 #joinBtn { background: var(--success); color: var(--text-light); }
-#shareBtn { background: #1a73e8; color: white; }
-#stopBtn { background: #dc3545; color: white; }
+#shareBtn { background: var(--primary); color: white; }
+#stopBtn { background: var(--danger); color: white; }
+
+/* ✅ Leave button styling */
+#leaveBtn {
+  background: #ff9800; /* amber */
+  color: #fff;
+}
+#leaveBtn:hover:not(:disabled) {
+  background: #ffa726;
+}
 
 button:active:not(:disabled) {
   transform: translateY(1px);
@@ -259,7 +269,7 @@ video::-webkit-media-controls-enclosure {
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
-  height: 100%; /* ✅ match .panel height */
+  height: 100%;
 }
 
 .sidebar h3 {

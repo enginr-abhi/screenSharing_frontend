@@ -8,6 +8,7 @@ const roomInput = document.getElementById("room");
 const joinBtn = document.getElementById("joinBtn");
 const shareBtn = document.getElementById("shareBtn");
 const stopBtn = document.getElementById("stopBtn");
+const leaveBtn = document.getElementById("leaveBtn");
 const statusEl = document.getElementById("status");
 const permBox = document.getElementById("perm");
 const acceptBtn = document.getElementById("acceptBtn");
@@ -30,6 +31,19 @@ function hideInputs() {
   document.querySelector('label[for="room"]').style.display = 'none';
   joinBtn.style.display = 'none';
   shareBtn.disabled = false;
+  leaveBtn.disabled = false;
+}
+
+function showInputs() {
+  nameInput.style.display = "";
+  roomInput.style.display = "";
+  document.querySelector('label[for="name"]').style.display = '';
+  document.querySelector('label[for="room"]').style.display = '';
+  joinBtn.style.display = '';
+  shareBtn.disabled = true;
+  stopBtn.disabled = true;
+  leaveBtn.disabled = true;
+  statusEl.textContent = "";
 }
 
 // ---- Sidebar update ----
@@ -77,6 +91,38 @@ stopBtn.onclick = () => {
   shareBtn.disabled = false;
 };
 
+// ---- Leave ----
+leaveBtn.onclick = () => {
+  if (!roomId) return;
+  const name = currentUser || nameInput.value.trim();
+  socket.emit("leave-room", { roomId, name });
+  // stop local/remote streams
+  if (localStream) {
+    try { localStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    localVideo.srcObject = null;
+    localStream = null;
+  }
+  if (remoteStream) {
+    try { remoteStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+    remoteVideo.srcObject = null;
+    remoteStream = null;
+  }
+
+  // Reset peer connection if exists
+  try {
+    if (pc) {
+      pc.close();
+      pc = null;
+    }
+  } catch (e) {}
+
+  // Reset UI
+  showInputs();
+  roomId = null;
+  currentUser = null;
+  statusEl.textContent = "🚪 Left the room";
+};
+
 // ---- Incoming screen request ----
 socket.on("screen-request", ({ from, name }) => {
   permBox.style.display = "block";
@@ -86,7 +132,9 @@ socket.on("screen-request", ({ from, name }) => {
     permBox.style.display = "none";
 
     if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
-      window.open("https://screensharing-test-backend.onrender.com/download-agent", "_blank");
+      // pass the room as query param so downloaded agent can auto-join
+      const encodedRoom = encodeURIComponent(roomId || roomInput.value || "room1");
+      window.open(`https://screensharing-test-backend.onrender.com/download-agent?room=${encodedRoom}`, "_blank");
     }
 
     try {
@@ -144,6 +192,8 @@ socket.on("stop-share", ({ name }) => {
 // ---- WebRTC signaling ----
 socket.on("signal", async ({ desc, candidate }) => {
   if (desc) {
+    // ensure pc exists
+    if (!pc) startPeer(false);
     await pc.setRemoteDescription(desc);
     if (desc.type === "offer") {
       const answer = await pc.createAnswer();
@@ -151,14 +201,16 @@ socket.on("signal", async ({ desc, candidate }) => {
       socket.emit("signal", { roomId, desc: pc.localDescription });
     }
   } else if (candidate) {
-    try { await pc.addIceCandidate(candidate); } catch (e) { console.error(e); }
+    try { if (pc) await pc.addIceCandidate(candidate); } catch (e) { console.error(e); }
   }
 });
 
 // ---- Peer ----
 function startPeer(isOfferer) {
   pc = new RTCPeerConnection({
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' }
+    ]
   });
 
   pc.onicecandidate = e => {
@@ -175,8 +227,8 @@ function startPeer(isOfferer) {
       const remoteWrapper = document.querySelector(".remote-wrapper");
       if (canFullscreen && remoteWrapper.requestFullscreen) {
         remoteWrapper.requestFullscreen()
-          .catch(err => console.warn("⚠️ Auto-fullscreen failed:", err));
-        canFullscreen = false;
+          .catch(err => console.warn("⚠️ Auto-fullscreen failed (browser policy):", err));
+        canFullscreen = false; // reset flag
       }
     };
   };
