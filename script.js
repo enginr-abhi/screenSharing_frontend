@@ -8,7 +8,6 @@ const roomInput = document.getElementById("room");
 const joinBtn = document.getElementById("joinBtn");
 const shareBtn = document.getElementById("shareBtn");
 const stopBtn = document.getElementById("stopBtn");
-const leaveBtn = document.getElementById("leaveBtn");
 const statusEl = document.getElementById("status");
 const permBox = document.getElementById("perm");
 const acceptBtn = document.getElementById("acceptBtn");
@@ -18,9 +17,19 @@ const remoteVideo = document.getElementById("remote");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const userListEl = document.getElementById("userList");
 
+// dynamically create Leave button if not exists
+let leaveBtn = document.getElementById("leaveBtn");
+if (!leaveBtn) {
+  leaveBtn = document.createElement("button");
+  leaveBtn.id = "leaveBtn";
+  leaveBtn.textContent = "Leave";
+  leaveBtn.disabled = true;
+  document.querySelector(".row").appendChild(leaveBtn);
+}
+
 let pc, localStream, remoteStream;
 let roomId;
-let canFullscreen = false; // 🔹 gesture flag
+let canFullscreen = false;
 let currentUser = null;
 
 // ---- UI helper ----
@@ -96,6 +105,7 @@ leaveBtn.onclick = () => {
   if (!roomId) return;
   const name = currentUser || nameInput.value.trim();
   socket.emit("leave-room", { roomId, name });
+
   // stop local/remote streams
   if (localStream) {
     try { localStream.getTracks().forEach(t => t.stop()); } catch (e) {}
@@ -108,16 +118,14 @@ leaveBtn.onclick = () => {
     remoteStream = null;
   }
 
-  // Reset peer connection if exists
+  // Reset peer connection
   try {
-    if (pc) {
-      pc.close();
-      pc = null;
-    }
+    if (pc) { pc.close(); pc = null; }
   } catch (e) {}
 
-  // Reset UI
+  // Reset UI completely
   showInputs();
+  userListEl.innerHTML = ""; // clear sidebar
   roomId = null;
   currentUser = null;
   statusEl.textContent = "🚪 Left the room";
@@ -132,7 +140,6 @@ socket.on("screen-request", ({ from, name }) => {
     permBox.style.display = "none";
 
     if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
-      // pass the room as query param so downloaded agent can auto-join
       const encodedRoom = encodeURIComponent(roomId || roomInput.value || "room1");
       window.open(`https://screensharing-test-backend.onrender.com/download-agent?room=${encodedRoom}`, "_blank");
     }
@@ -192,7 +199,6 @@ socket.on("stop-share", ({ name }) => {
 // ---- WebRTC signaling ----
 socket.on("signal", async ({ desc, candidate }) => {
   if (desc) {
-    // ensure pc exists
     if (!pc) startPeer(false);
     await pc.setRemoteDescription(desc);
     if (desc.type === "offer") {
@@ -207,11 +213,7 @@ socket.on("signal", async ({ desc, candidate }) => {
 
 // ---- Peer ----
 function startPeer(isOfferer) {
-  pc = new RTCPeerConnection({
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' }
-    ]
-  });
+  pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
 
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate });
@@ -226,9 +228,8 @@ function startPeer(isOfferer) {
     remoteVideo.onloadedmetadata = () => {
       const remoteWrapper = document.querySelector(".remote-wrapper");
       if (canFullscreen && remoteWrapper.requestFullscreen) {
-        remoteWrapper.requestFullscreen()
-          .catch(err => console.warn("⚠️ Auto-fullscreen failed (browser policy):", err));
-        canFullscreen = false; // reset flag
+        remoteWrapper.requestFullscreen().catch(err => console.warn("⚠️ Auto-fullscreen failed:", err));
+        canFullscreen = false;
       }
     };
   };
@@ -240,6 +241,7 @@ function startPeer(isOfferer) {
       socket.emit("signal", { roomId, desc: pc.localDescription });
     };
   }
+
   enableRemoteControl();
 }
 
@@ -253,21 +255,15 @@ function enableRemoteControl() {
   });
 
   ["click", "dblclick", "mousedown", "mouseup"].forEach(evt => {
-    remoteVideo.addEventListener(evt, e => {
-      socket.emit("control", { type: evt, button: e.button });
-    });
+    remoteVideo.addEventListener(evt, e => socket.emit("control", { type: evt, button: e.button }));
   });
 
   remoteVideo.addEventListener("wheel", e => {
     socket.emit("control", { type: "wheel", deltaY: e.deltaY });
   });
 
-  document.addEventListener("keydown", e => {
-    socket.emit("control", { type: "keydown", key: e.key });
-  });
-  document.addEventListener("keyup", e => {
-    socket.emit("control", { type: "keyup", key: e.key });
-  });
+  document.addEventListener("keydown", e => socket.emit("control", { type: "keydown", key: e.key }));
+  document.addEventListener("keyup", e => socket.emit("control", { type: "keyup", key: e.key }));
 }
 
 // ---- Fullscreen ----
@@ -276,17 +272,7 @@ fullscreenBtn.onclick = () => {
   if (remoteWrapper.requestFullscreen) remoteWrapper.requestFullscreen();
 };
 
-// ================================
-// 🟢 Handle Online Users
-// ================================
-socket.on("peer-list", users => {
-  updateUserList(users);
-});
-
-socket.on("peer-joined", () => {
-  socket.emit("get-peers");
-});
-
-socket.on("peer-left", () => {
-  socket.emit("get-peers");
-});
+// ---- Online users ----
+socket.on("peer-list", users => updateUserList(users));
+socket.on("peer-joined", () => socket.emit("get-peers"));
+socket.on("peer-left", () => socket.emit("get-peers"));
