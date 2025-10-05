@@ -15,11 +15,14 @@ const rejectBtn = document.getElementById("rejectBtn");
 const localVideo = document.getElementById("local");
 const remoteVideo = document.getElementById("remote");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
+const userListEl = document.getElementById("userList");
 
 let pc, localStream, remoteStream;
 let roomId;
 let canFullscreen = false; // 🔹 gesture flag
+let currentUser = null;
 
+// ---- UI helper ----
 function hideInputs() {
   nameInput.style.display = "none";
   roomInput.style.display = "none";
@@ -29,12 +32,27 @@ function hideInputs() {
   shareBtn.disabled = false;
 }
 
+// ---- Sidebar update ----
+function updateUserList(users) {
+  if (!userListEl) return;
+  userListEl.innerHTML = users.map(u => `
+    <div class="user-item">
+      <div>
+        <div class="user-name">${u.name}</div>
+        <div class="user-room">Room: ${u.roomId}</div>
+      </div>
+      <div class="status-dot ${u.isOnline ? "status-online" : "status-offline"}"></div>
+    </div>
+  `).join("");
+}
+
 // ---- Join ----
 joinBtn.onclick = () => {
   const name = nameInput.value.trim();
   roomId = roomInput.value.trim();
   if (!name || !roomId) return alert("Enter name and room");
 
+  currentUser = name;
   socket.emit("set-name", { name });
   socket.emit("join-room", { roomId, name, isAgent: false });
   hideInputs();
@@ -45,12 +63,12 @@ joinBtn.onclick = () => {
 shareBtn.onclick = () => {
   socket.emit("request-screen", { roomId, from: socket.id });
   statusEl.textContent = "⏳ Requesting screen...";
-  canFullscreen = true; // 🔹 mark that fullscreen can be triggered later
+  canFullscreen = true;
 };
 
 // ---- Stop ----
 stopBtn.onclick = () => {
-  const name = nameInput.value.trim();
+  const name = currentUser || nameInput.value.trim();
   socket.emit("stop-share", { roomId, name });
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
@@ -110,7 +128,6 @@ socket.on("permission-result", accepted => {
   }
   statusEl.textContent = "✅ Request accepted";
   startPeer(false);
-
   stopBtn.disabled = false;
   shareBtn.disabled = true;
 });
@@ -141,9 +158,7 @@ socket.on("signal", async ({ desc, candidate }) => {
 // ---- Peer ----
 function startPeer(isOfferer) {
   pc = new RTCPeerConnection({
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' }
-    ]
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
   });
 
   pc.onicecandidate = e => {
@@ -156,15 +171,12 @@ function startPeer(isOfferer) {
       remoteVideo.srcObject = remoteStream;
     }
     remoteStream.addTrack(e.track);
-    // New code to REVERT TO:
     remoteVideo.onloadedmetadata = () => {
-      // Get the wrapper element for better fullscreen experience
-      const remoteWrapper = document.querySelector(".remote-wrapper"); 
-      
+      const remoteWrapper = document.querySelector(".remote-wrapper");
       if (canFullscreen && remoteWrapper.requestFullscreen) {
         remoteWrapper.requestFullscreen()
-          .catch(err => console.warn("⚠️ Auto-fullscreen failed (browser policy):", err));
-        canFullscreen = false; // reset flag
+          .catch(err => console.warn("⚠️ Auto-fullscreen failed:", err));
+        canFullscreen = false;
       }
     };
   };
@@ -206,13 +218,23 @@ function enableRemoteControl() {
   });
 }
 
-// // ---- Fullscreen Button ----
-// fullscreenBtn.onclick = () => {
-//   if (remoteVideo.requestFullscreen) remoteVideo.requestFullscreen();
-// };
-
-// ---- Fullscreen Button ----
+// ---- Fullscreen ----
 fullscreenBtn.onclick = () => {
   const remoteWrapper = document.querySelector(".remote-wrapper");
   if (remoteWrapper.requestFullscreen) remoteWrapper.requestFullscreen();
 };
+
+// ================================
+// 🟢 Handle Online Users
+// ================================
+socket.on("peer-list", users => {
+  updateUserList(users);
+});
+
+socket.on("peer-joined", () => {
+  socket.emit("get-peers");
+});
+
+socket.on("peer-left", () => {
+  socket.emit("get-peers");
+});
