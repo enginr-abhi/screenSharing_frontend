@@ -82,12 +82,52 @@ joinBtn.onclick = () => {
   statusEl.textContent = `✅ ${name} Joined ${roomId}`;
 };
 
-// ---- Request screen ----
+// ---- NEW: RDP Screen Request ----
 shareBtn.onclick = () => {
-  socket.emit("request-screen", { roomId, from: socket.id });
-  statusEl.textContent = "⏳ Requesting screen...";
+  socket.emit("start-rdp-capture", { roomId });
+  statusEl.textContent = "⏳ Starting Windows Remote Desktop...";
   canFullscreen = true;
 };
+
+// ---- NEW: Windows RDP Connection Handler ----
+socket.on('windows-rdp-connect', (data) => {
+  statusEl.textContent = "✅ Windows RDP Ready!";
+  
+  // Auto-launch Windows RDP client
+  launchWindowsRDP(data);
+});
+
+// ---- NEW: Windows RDP Launch Function ----
+function launchWindowsRDP(rdpData) {
+  const { ip, username, computerName } = rdpData;
+  
+  // Confirm dialog with connection details
+  if (confirm(`Windows Remote Desktop is ready!\n\nComputer: ${computerName}\nIP Address: ${ip}\nUsername: ${username}\n\nClick OK to launch Remote Desktop Connection`)) {
+    
+    // Windows RDP client launch kare using ms-rdp protocol
+    try {
+      // Method 1: ms-rdp protocol (works in most Windows browsers)
+      window.open(`ms-rdp:fulladdress=s:${ip}`, '_blank');
+      
+      statusEl.textContent = "🖥️ Launching Remote Desktop...";
+      
+      // Fallback agar protocol support na ho
+      setTimeout(() => {
+        if (confirm("If Remote Desktop didn't open automatically, please manually open 'Remote Desktop Connection' and connect to: " + ip)) {
+          // Manual instructions
+          alert(`Manual Connection Instructions:\n\n1. Press Win+R\n2. Type 'mstsc' and press Enter\n3. Enter computer: ${ip}\n4. Username: ${username}\n5. Click Connect`);
+        }
+      }, 3000);
+      
+    } catch (error) {
+      // Fallback manual instructions
+      alert(`📋 Manual RDP Connection Required:\n\nComputer: ${ip}\nUsername: ${username}\n\nSteps:\n1. Press Win+R\n2. Type 'mstsc'\n3. Enter the above details\n4. Click Connect`);
+    }
+  } else {
+    // User ne cancel kiya toh connection details show karo
+    alert(`📋 RDP Connection Details (Save this):\n\nComputer: ${ip}\nUsername: ${username}\n\nYou can connect later using Remote Desktop Connection.`);
+  }
+}
 
 // ---- Stop ----
 stopBtn.onclick = () => {
@@ -131,49 +171,49 @@ leaveBtn.onclick = () => {
   statusEl.textContent = "🚪 Left the room";
 };
 
-// ---- Incoming screen request ----
-socket.on("screen-request", ({ from, name }) => {
-  permBox.style.display = "block";
-  document.getElementById("permText").textContent = `${name} wants to view your screen`;
+// ---- COMMENT OUT: Incoming screen request (RDP use karenge) ----
+// socket.on("screen-request", ({ from, name }) => {
+//   permBox.style.display = "block";
+//   document.getElementById("permText").textContent = `${name} wants to view your screen`;
 
-  acceptBtn.onclick = async () => {
-    permBox.style.display = "none";
+//   acceptBtn.onclick = async () => {
+//     permBox.style.display = "none";
 
-    if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
-      const encodedRoom = encodeURIComponent(roomId || roomInput.value || "room1");
-      window.open(`https://screensharing-test-backend.onrender.com/download-agent?room=${encodedRoom}`, "_blank");
-    }
+//     if (confirm("For full remote control please download & run the Agent app.\nDo you want to download it now?")) {
+//       const encodedRoom = encodeURIComponent(roomId || roomInput.value || "room1");
+//       window.open(`https://screensharing-test-backend.onrender.com/download-agent?room=${encodedRoom}`, "_blank");
+//     }
 
-    try {
-      localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
-      localVideo.srcObject = localStream;
+//     try {
+//       localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
+//       localVideo.srcObject = localStream;
 
-      const track = localStream.getVideoTracks()[0];
-      const settings = track.getSettings();
-      socket.emit("capture-info", {
-        roomId,
-        captureWidth: settings.width,
-        captureHeight: settings.height,
-        devicePixelRatio: window.devicePixelRatio || 1,
-      });
+//       const track = localStream.getVideoTracks()[0];
+//       const settings = track.getSettings();
+//       socket.emit("capture-info", {
+//         roomId,
+//         captureWidth: settings.width,
+//         captureHeight: settings.height,
+//         devicePixelRatio: window.devicePixelRatio || 1,
+//       });
 
-      startPeer(true);
-      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+//       startPeer(true);
+//       localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
 
-      socket.emit("permission-response", { to: from, accepted: true });
-      stopBtn.disabled = false;
-      shareBtn.disabled = true;
-    } catch (err) {
-      console.error(err);
-      socket.emit("permission-response", { to: from, accepted: false });
-    }
-  };
+//       socket.emit("permission-response", { to: from, accepted: true });
+//       stopBtn.disabled = false;
+//       shareBtn.disabled = true;
+//     } catch (err) {
+//       console.error(err);
+//       socket.emit("permission-response", { to: from, accepted: false });
+//     }
+//   };
 
-  rejectBtn.onclick = () => {
-    permBox.style.display = "none";
-    socket.emit("permission-response", { to: from, accepted: false });
-  };
-});
+//   rejectBtn.onclick = () => {
+//     permBox.style.display = "none";
+//     socket.emit("permission-response", { to: from, accepted: false });
+//   };
+// });
 
 // ---- Permission result ----
 socket.on("permission-result", accepted => {
