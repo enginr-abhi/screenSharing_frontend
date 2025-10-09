@@ -1,8 +1,10 @@
-// script.js (frontend) - replace your existing file with this
-const BACKEND_URL = "https://screensharing-test-backend.onrender.com";
+// script.js (frontend - Complete File with RDP Fixes)
+
+// NOTE: BACKEND_URL ko apne live backend URL se badal lein
+const BACKEND_URL = "https://screensharing-test-backend.onrender.com"; 
 const socket = io(BACKEND_URL, { transports: ["websocket"] });
 
-/* UI elements (your existing HTML) */
+/* UI elements */
 const nameInput = document.getElementById("name");
 const roomInput = document.getElementById("room");
 const joinBtn = document.getElementById("joinBtn");
@@ -50,85 +52,93 @@ function updateUserList(users) {
   if (!userListEl) return;
   userListEl.innerHTML = users.map(u => `
     <div class="user-item">
-      <div>
-        <div class="user-name">${u.name}</div>
-        <div class="user-room">Room: ${u.roomId || 'N/A'}</div>
-      </div>
-      <div class="status-dot ${u.isAgent ? "status-online" : "status-online"}"></div>
+    <div>
+    <div class="user-name">${u.name}</div>
+    <div class="user-room">Room: ${u.roomId || 'N/A'}</div>
     </div>
-  `).join("");
-}
-
-/* Join */
-joinBtn.onclick = () => {
-  const name = nameInput.value.trim();
-  roomId = roomInput.value.trim();
-  if (!name || !roomId) return alert("Enter name and room");
-  currentUser = name;
-  socket.emit("set-name", { name });
-  socket.emit("join-room", { roomId, name, isAgent: false });
-  hideInputs();
-  statusEl.textContent = `✅ ${name} Joined ${roomId}`;
-};
-
-/* Request Access (viewer) */
-shareBtn.onclick = () => {
-  if (!roomId) return alert("Join a room first");
-  // Step 1: ask target(s) in room for permission
-  socket.emit("request-screen", { roomId, from: socket.id });
-  statusEl.textContent = "⏳ Request sent — waiting for peer to accept...";
-};
-
-/* Incoming screen-request (target side) */
-socket.on("screen-request", ({ from, name }) => {
-  // Show permission box
-  permBox.style.display = "block";
-  document.getElementById("permText").textContent = `${name || 'Peer'} wants to view your screen`;
-
-  acceptBtn.onclick = () => {
-    permBox.style.display = "none";
-    // open agent download for the target so they can run the agent
-    const encoded = encodeURIComponent(roomId || roomInput.value || "room1");
-    window.open(`${BACKEND_URL}/download-agent?room=${encoded}`, "_blank");
-
-    // signal acceptance back to requester
-    socket.emit("permission-response", { to: from, accepted: true });
-    statusEl.textContent = "✅ Accepted — agent download started (please run the agent)";
+    <div class="status-dot ${u.isAgent ? "status-online" : "status-online"}"></div>
+    </div>
+    `).join("");
+  }
+  
+  /* Join */
+  joinBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    roomId = roomInput.value.trim();
+    if (!name || !roomId) return alert("Enter name and room");
+    currentUser = name;
+    socket.emit("set-name", { name });
+    socket.emit("join-room", { roomId, name, isAgent: false });
+    hideInputs();
+    statusEl.textContent = `✅ ${name} Joined ${roomId}`;
   };
 
-  rejectBtn.onclick = () => {
-    permBox.style.display = "none";
-    socket.emit("permission-response", { to: from, accepted: false });
-    statusEl.textContent = "❌ Rejected";
+  /* Request Access (viewer) */
+  shareBtn.onclick = () => {
+    if (!roomId) return alert("Join a room first");
+    socket.emit("request-screen", { roomId, from: socket.id });
+    statusEl.textContent = "⏳ Request sent — waiting for peer to accept...";
   };
-});
-
-/* Permission result on requester side */
-socket.on("permission-result", (accepted) => {
-  if (!accepted) {
-    statusEl.textContent = "❌ Request denied by peer";
-    return;
-  }
-  statusEl.textContent = "✅ Request accepted — requesting agent to start RDP...";
-  // Ask the backend to trigger agent (if present). Server will store pending request if agent not yet connected.
-  socket.emit("start-rdp-capture", { roomId });
-});
-
-/* Backend tells us agent is ready with RDP details */
-socket.on("windows-rdp-connect", (data) => {
-  statusEl.textContent = "✅ Remote system ready — launching RDP client...";
-  // Launch local RDP client using ms-rdp protocol if available
-  try {
-    // try ms-rdp protocol (works on Windows clients)
-    window.open(`ms-rdp:fulladdress=s:${data.ip}`, "_blank");
-  } catch (e) {
-    alert(`Remote ready: ${data.computerName} (${data.ip}). Connect using Remote Desktop (mstsc).`);
-  }
-});
-
-/* Optional: capture-info (if using browser displayMedia fallback) */
-socket.on("capture-info", info => {
-  console.log("capture-info received:", info);
+  
+  /* Incoming screen-request (target side) */
+  socket.on("screen-request", ({ from, name }) => {
+    permBox.style.display = "block";
+    document.getElementById("permText").textContent = `${name || 'Peer'} wants to view your screen`;
+    
+    acceptBtn.onclick = () => {
+      permBox.style.display = "none";
+      const encoded = encodeURIComponent(roomId || roomInput.value || "room1");
+      window.open(`${BACKEND_URL}/download-agent?room=${encoded}`, "_blank");
+      
+      socket.emit("permission-response", { to: from, accepted: true });
+      statusEl.textContent = "✅ Accepted — agent download started (please run the agent)";
+    };
+    
+    rejectBtn.onclick = () => {
+      permBox.style.display = "none";
+      socket.emit("permission-response", { to: from, accepted: false });
+      statusEl.textContent = "❌ Rejected";
+    };
+  });
+  
+  /* Permission result on requester side */
+  socket.on("permission-result", (accepted) => {
+    if (!accepted) {
+      statusEl.textContent = "❌ Request denied by peer";
+      return;
+    }
+    statusEl.textContent = "✅ Request accepted — requesting agent to start RDP...";
+    socket.emit("start-rdp-capture", { roomId });
+  });
+  
+  /* Backend tells us agent is ready with RDP details */
+  socket.on("windows-rdp-connect", (data) => {
+    statusEl.textContent = "✅ Remote system ready — launching RDP client...";
+    
+    // FIX 1: Send a fixed capture-info to the Agent for mouse position calculation
+    // This enables remote control functionality
+    socket.emit("capture-info", {
+      roomId: roomId,
+      captureWidth: 1280, 
+      captureHeight: 720, 
+      devicePixelRatio: 1 
+    });
+    
+    // FIX 2: Launch local RDP client
+    try {
+      window.open(`ms-rdp:fulladdress=s:${data.ip}`, "_blank");
+      alert(`RDP Client launched. IP: ${data.ip}. Use this IP and your credentials to connect.`);
+    } catch (e) {
+      alert(`Remote ready: ${data.computerName} (${data.ip}). Connect using Remote Desktop (mstsc).`);
+    }
+    
+    // Enable remote control handlers
+    enableRemoteControl();
+  });
+  
+  /* Optional: capture-info (for browser capture fallback) */
+  socket.on("capture-info", info => {
+    console.log("capture-info received:", info);
 });
 
 /* Stop-share */
@@ -140,7 +150,7 @@ socket.on("stop-share", ({ name }) => {
   shareBtn.disabled = false;
 });
 
-/* Signaling (WebRTC fallback) - keep if you later enable browser->browser stream */
+/* Signaling (WebRTC fallback) - kept for potential future use */
 socket.on("signal", async ({ desc, candidate }) => {
   if (desc) {
     if (!pc) startPeer(false);
@@ -162,11 +172,11 @@ socket.on("signal", async ({ desc, candidate }) => {
 /* Peer connection functions (left for fallback) */
 function startPeer(isOfferer) {
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-
+  
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate });
   };
-
+  
   pc.ontrack = e => {
     if (!remoteStream) {
       remoteStream = new MediaStream();
@@ -181,7 +191,7 @@ function startPeer(isOfferer) {
       }
     };
   };
-
+  
   if (isOfferer) {
     pc.onnegotiationneeded = async () => {
       try {
@@ -190,25 +200,31 @@ function startPeer(isOfferer) {
         socket.emit("signal", { roomId, desc: pc.localDescription });
       } catch (err) { console.error("Negotiation failed:", err); }
     };
-  }
+  }
 
-  enableRemoteControl();
+  enableRemoteControl();
 }
 
 /* remote control handlers (these go to agent) */
 function enableRemoteControl() {
-  remoteVideo.addEventListener("mousemove", e => {
+  
+  const handleMouse = (e, type) => {
+    // Calculate relative position (0 to 1)
     const rect = remoteVideo.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    socket.emit("control", { type: "mousemove", x, y });
-  });
-
+    // Send relative position and event type/button
+    socket.emit("control", { type, x, y, button: e.button }); 
+  };
+  
+  remoteVideo.addEventListener("mousemove", e => handleMouse(e, "mousemove"));
+  
   ["click", "dblclick", "mousedown", "mouseup"].forEach(evt => {
-    remoteVideo.addEventListener(evt, e => socket.emit("control", { type: evt, button: e.button }));
+    remoteVideo.addEventListener(evt, e => handleMouse(e, evt));
   });
-
+  
   remoteVideo.addEventListener("wheel", e => socket.emit("control", { type: "wheel", deltaY: e.deltaY }));
+  // Keyboard events are registered on the whole document
   document.addEventListener("keydown", e => socket.emit("control", { type: "keydown", key: e.key }));
   document.addEventListener("keyup", e => socket.emit("control", { type: "keyup", key: e.key }));
 }
