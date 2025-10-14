@@ -4,36 +4,65 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Screen Share — Remote Control</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="main.css">
 </head>
 <body>
-<header><h1>Screen Share</h1></header>
+<header>
+  <h1>Screen Share — Remote Control</h1>
+</header>
 
-<!-- 🟢 Wrap panel + sidebar in container -->
+<!-- Main Container -->
 <div class="main-container">
 
-  <!-- 🎥 Main Panel -->
+  <!-- Main Panel -->
   <div class="panel">
     <div class="row">
-      <label for="name">Name:</label>
-      <input id="name" placeholder="Enter your name">
+      <label for="name"><i class="fas fa-user"></i> Name:</label>
+      <div class="input-group">
+        <i class="fas fa-user"></i>
+        <input id="name" placeholder="Enter your name">
+      </div>
     </div>
 
     <div class="row">
-      <label for="room">Room:</label>
-      <input id="room" value="room1">
-      <button id="joinBtn">Join</button>
-      <button id="shareBtn" disabled>Request Access</button>
-      <button id="stopBtn" disabled>Stop</button>
-      <button id="leaveBtn" disabled>Leave</button>
-      <span id="status"></span>
+      <label for="room"><i class="fas fa-door-closed"></i> Room:</label>
+      <div class="input-group">
+        <i class="fas fa-door-closed"></i>
+        <input id="room" value="room1">
+      </div>
+      <button id="joinBtn" class="btn-primary">
+        <i class="fas fa-sign-in-alt"></i> Join
+      </button>
     </div>
 
-    <div id="perm" class="perm-box">
+    <div class="row">
+      <div class="btn-group">
+        <button id="shareBtn" class="btn-success" disabled>
+          <i class="fas fa-desktop"></i> Request Access
+        </button>
+        <button id="stopBtn" class="btn-danger" disabled>
+          <i class="fas fa-stop"></i> Stop
+        </button>
+        <button id="leaveBtn" class="btn-warning" disabled>
+          <i class="fas fa-sign-out-alt"></i> Leave
+        </button>
+      </div>
+      <span id="status">
+        <span class="status-indicator"></span>
+        <span id="statusText">Not connected</span>
+      </span>
+    </div>
+
+    <div id="perm" class="card">
       <div id="permText">Peer wants to view your screen</div>
       <div class="actions">
-        <button class="btn-ok" id="acceptBtn">Accept</button>
-        <button class="btn-no" id="rejectBtn">Reject</button>
+        <button class="btn-ok" id="acceptBtn">
+          <i class="fas fa-check"></i> Accept
+        </button>
+        <button class="btn-no" id="rejectBtn">
+          <i class="fas fa-times"></i> Reject
+        </button>
       </div>
     </div>
 
@@ -41,16 +70,25 @@
       <video id="local" autoplay muted playsinline></video>
       <div class="remote-wrapper">
         <video id="remote" autoplay playsinline></video>
-        <button id="fullscreenBtn">⛶</button>
+        <button id="fullscreenBtn" class="btn-outline btn-sm">
+          <i class="fas fa-expand"></i> Fullscreen
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- 🟢 Sidebar (Online Users List) -->
+  <!-- Sidebar (Online Users List) -->
   <aside class="sidebar" id="sidebar">
-    <h3>🟢 Online Users</h3>
-    <div id="userList">
+    <div class="sidebar-header">
+      <h3><i class="fas fa-users"></i> Online Users</h3>
+      <div class="user-count" id="userCount">0</div>
+    </div>
+    <div id="userList" class="user-list">
       <!-- Dynamically filled by JS -->
+      <div class="text-center" style="color: var(--text-muted); padding: 20px;">
+        <i class="fas fa-users-slash" style="font-size: 24px; margin-bottom: 8px;"></i>
+        <p>No users online</p>
+      </div>
     </div>
   </aside>
 
