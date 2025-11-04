@@ -1,5 +1,5 @@
 // NOTE: BACKEND_URL ko apne live backend URL se badal lein
-const BACKEND_URL = "https://screensharing-test-backend.onrender.com"; 
+const BACKEND_URL = "https://screensharing-test-backend.onrender.com";
 const socket = io(BACKEND_URL, { transports: ["websocket"] });
 
 /* UI elements */
@@ -17,6 +17,7 @@ const acceptBtn = document.getElementById("acceptBtn");
 const rejectBtn = document.getElementById("rejectBtn");
 const localVideo = document.getElementById("local");
 const remoteVideo = document.getElementById("remote");
+const remoteImg = document.getElementById("remoteImg");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const userListEl = document.getElementById("userList");
 const userCountEl = document.getElementById("userCount");
@@ -29,8 +30,6 @@ let canFullscreen = false;
 /* UI helpers */
 function updateStatus(text, type = "default") {
   statusText.textContent = text;
-  
-  // Update status indicator
   statusIndicator.className = "status-indicator";
   if (type === "connected") {
     statusIndicator.classList.add("status-connected");
@@ -64,7 +63,7 @@ function showInputs() {
 /* show online users */
 function updateUserList(users) {
   if (!userListEl) return;
-  
+
   if (users.length === 0) {
     userListEl.innerHTML = `
       <div class="text-center" style="color: var(--text-muted); padding: 20px;">
@@ -75,7 +74,7 @@ function updateUserList(users) {
     userCountEl.textContent = "0";
     return;
   }
-  
+
   userListEl.innerHTML = users.map(u => `
     <div class="user-item">
       <div class="user-info">
@@ -85,7 +84,7 @@ function updateUserList(users) {
       <div class="status-dot ${u.isAgent ? "status-online" : "status-online"}"></div>
     </div>
   `).join("");
-  
+
   userCountEl.textContent = users.length;
 }
 
@@ -112,16 +111,16 @@ shareBtn.onclick = () => {
 socket.on("screen-request", ({ from, name }) => {
   permBox.style.display = "block";
   document.getElementById("permText").textContent = `${name || 'Peer'} wants to view your screen`;
-  
+
   acceptBtn.onclick = () => {
     permBox.style.display = "none";
     const encoded = encodeURIComponent(roomId || roomInput.value || "room1");
     window.open(`${BACKEND_URL}/download-agent?room=${encoded}`, "_blank");
-    
+
     socket.emit("permission-response", { to: from, accepted: true });
     updateStatus("✅ Accepted — agent download started (please run the agent)", "connected");
   };
-  
+
   rejectBtn.onclick = () => {
     permBox.style.display = "none";
     socket.emit("permission-response", { to: from, accepted: false });
@@ -142,29 +141,35 @@ socket.on("permission-result", (accepted) => {
 /* Backend tells us agent is ready with RDP details */
 socket.on("windows-rdp-connect", (data) => {
   updateStatus("✅ Remote system ready — launching RDP client...", "connected");
-  
-  // FIX 1: Send a fixed capture-info to the Agent for mouse position calculation
-  // This enables remote control functionality
+
+  // FIX 1: Send capture-info to agent
   socket.emit("capture-info", {
     roomId: roomId,
-    captureWidth: 1280, 
-    captureHeight: 720, 
-    devicePixelRatio: 1 
+    captureWidth: 1280,
+    captureHeight: 720,
+    devicePixelRatio: 1
   });
-  
-  // FIX 2: Launch local RDP client
+
   try {
     window.open(`ms-rdp:fulladdress=s:${data.ip}`, "_blank");
     alert(`RDP Client launched. IP: ${data.ip}. Use this IP and your credentials to connect.`);
   } catch (e) {
     alert(`Remote ready: ${data.computerName} (${data.ip}). Connect using Remote Desktop (mstsc).`);
   }
-  
-  // Enable remote control handlers
+
   enableRemoteControl();
 });
 
-/* Optional: capture-info (for browser capture fallback) */
+/* ✅ FIX: Receive screen frames from agent (image-based streaming) */
+socket.on("screen-frame", ({ image }) => {
+  if (image && remoteImg) {
+    remoteImg.src = `data:image/jpeg;base64,${image}`;
+    remoteImg.style.display = "block";
+    remoteVideo.style.display = "none";
+  }
+});
+
+/* Optional: capture-info */
 socket.on("capture-info", info => {
   console.log("capture-info received:", info);
 });
@@ -173,12 +178,13 @@ socket.on("capture-info", info => {
 socket.on("stop-share", ({ name }) => {
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
+  if (remoteImg) remoteImg.src = "";
   updateStatus(`🛑 ${name || 'Peer'} stopped sharing`, "default");
   stopBtn.disabled = true;
   shareBtn.disabled = false;
 });
 
-/* Signaling (WebRTC fallback) - kept for potential future use */
+/* Signaling (WebRTC fallback) */
 socket.on("signal", async ({ desc, candidate }) => {
   if (desc) {
     if (!pc) startPeer(false);
@@ -197,29 +203,22 @@ socket.on("signal", async ({ desc, candidate }) => {
   }
 });
 
-/* Peer connection functions (left for fallback) */
+/* Peer connection (fallback) */
 function startPeer(isOfferer) {
   pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-  
+
   pc.onicecandidate = e => {
     if (e.candidate) socket.emit("signal", { roomId, candidate: e.candidate });
   };
-  
+
   pc.ontrack = e => {
     if (!remoteStream) {
       remoteStream = new MediaStream();
       remoteVideo.srcObject = remoteStream;
     }
     remoteStream.addTrack(e.track);
-    remoteVideo.onloadedmetadata = () => {
-      const remoteWrapper = document.querySelector(".remote-wrapper");
-      if (canFullscreen && remoteWrapper.requestFullscreen) {
-        remoteWrapper.requestFullscreen().catch(err => console.warn("Auto-fullscreen failed:", err));
-        canFullscreen = false;
-      }
-    };
   };
-  
+
   if (isOfferer) {
     pc.onnegotiationneeded = async () => {
       try {
@@ -233,47 +232,43 @@ function startPeer(isOfferer) {
   enableRemoteControl();
 }
 
-/* remote control handlers (these go to agent) */
+/* Remote control (mouse/keyboard) */
 function enableRemoteControl() {
-  
   const handleMouse = (e, type) => {
-    // Calculate relative position (0 to 1)
     const rect = remoteVideo.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    // Send relative position and event type/button
-    socket.emit("control", { type, x, y, button: e.button }); 
+    socket.emit("control", { type, x, y, button: e.button });
   };
-  
+
   remoteVideo.addEventListener("mousemove", e => handleMouse(e, "mousemove"));
-  
   ["click", "dblclick", "mousedown", "mouseup"].forEach(evt => {
     remoteVideo.addEventListener(evt, e => handleMouse(e, evt));
   });
-  
   remoteVideo.addEventListener("wheel", e => socket.emit("control", { type: "wheel", deltaY: e.deltaY }));
-  // Keyboard events are registered on the whole document
+
   document.addEventListener("keydown", e => socket.emit("control", { type: "keydown", key: e.key }));
   document.addEventListener("keyup", e => socket.emit("control", { type: "keyup", key: e.key }));
 }
 
-/* fullscreen button */
+/* Fullscreen */
 fullscreenBtn.onclick = () => {
   const remoteWrapper = document.querySelector(".remote-wrapper");
   if (remoteWrapper.requestFullscreen) remoteWrapper.requestFullscreen();
 };
 
-/* user list updates */
+/* Peer list updates */
 socket.on("peer-list", users => updateUserList(users));
 socket.on("peer-joined", () => socket.emit("get-peers"));
 socket.on("peer-left", () => socket.emit("get-peers"));
 
-/* Leave / Stop UI */
+/* Stop / Leave */
 stopBtn.onclick = () => {
   const name = currentUser || nameInput.value.trim();
   socket.emit("stop-share", { roomId, name });
   if (remoteStream) remoteStream.getTracks().forEach(t => t.stop());
   remoteVideo.srcObject = null;
+  if (remoteImg) remoteImg.src = "";
   updateStatus("🛑 Stopped", "default");
   stopBtn.disabled = true;
   shareBtn.disabled = false;
@@ -283,10 +278,12 @@ leaveBtn.onclick = () => {
   if (!roomId) return;
   const name = currentUser || nameInput.value.trim();
   socket.emit("leave-room", { roomId, name });
-  // UI cleanup
+
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; localVideo.srcObject = null; }
   if (remoteStream) { remoteStream.getTracks().forEach(t => t.stop()); remoteStream = null; remoteVideo.srcObject = null; }
   if (pc) { pc.close(); pc = null; }
+
+  if (remoteImg) remoteImg.src = "";
   showInputs();
   userListEl.innerHTML = "";
   roomId = null;
@@ -294,9 +291,8 @@ leaveBtn.onclick = () => {
   updateStatus("🚪 Left the room", "default");
 };
 
-/* debug */
+/* Debug */
 socket.on("connect", () => console.log("Socket connected:", socket.id));
 socket.on("connect_error", e => console.error("Socket connect_error:", e));
 
-// Initialize UI
 showInputs();
