@@ -54,8 +54,7 @@
       </span>
     </div>
 
-    <!-- Permission Popup -->
-    <div id="perm" class="card" style="display:none;">
+    <div id="perm" class="card">
       <div id="permText">Peer wants to view your screen</div>
       <div class="actions">
         <button class="btn-ok" id="acceptBtn">
@@ -67,12 +66,11 @@
       </div>
     </div>
 
-    <!-- Videos / Remote screen -->
     <div class="videos">
       <video id="local" autoplay muted playsinline></video>
       <div class="remote-wrapper">
-        <!-- Ye line important hai: ab screen ya to video se aayegi ya WebSocket image se -->
-        <img id="remoteImg" style="width:100%; height:100%; object-fit:contain; display:none;" />
+        <!-- replace or add inside .remote-wrapper -->
+<img id="remoteImg" style="width:100%; height:100%; object-fit:contain; display:block;" />
         <video id="remote" autoplay playsinline></video>
         <button id="fullscreenBtn" class="btn-outline btn-sm">
           <i class="fas fa-expand"></i> Fullscreen
@@ -81,13 +79,14 @@
     </div>
   </div>
 
-  <!-- Sidebar -->
+  <!-- Sidebar (Online Users List) -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h3><i class="fas fa-users"></i> Online Users</h3>
       <div class="user-count" id="userCount">0</div>
     </div>
     <div id="userList" class="user-list">
+      <!-- Dynamically filled by JS -->
       <div class="text-center" style="color: var(--text-muted); padding: 20px;">
         <i class="fas fa-users-slash" style="font-size: 24px; margin-bottom: 8px;"></i>
         <p>No users online</p>
